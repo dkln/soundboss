@@ -18,12 +18,19 @@ EventMachine.run do
     end
 
     socket.onmessage do |message|
-      puts "Message received, sending to other sockets"
-      puts message
+      hash = JSON.parse(message)
+      puts "Handling message: #{hash.inspect}"
 
-      sockets.each do |other_socket|
-        other_socket.send(message) if other_socket != socket
+      if hash.fetch("args"){{}}["preview"]
+        puts "Playing preview"
+        socket.send(message)
+      else
+        puts "Broadcasting sound to other sockets"
+        sockets.each do |other_socket|
+          other_socket.send(message) if other_socket != socket
+        end
       end
+
     end
 
     socket.onclose do
