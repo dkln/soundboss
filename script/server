@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+gem which bundler > /dev/null 2>&1 || gem install bundler --no-ri --no-rdoc
+bundle check > /dev/null || bundle install
+bundle exec foreman start
