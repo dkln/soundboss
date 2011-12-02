@@ -1,22 +1,69 @@
 L = -> console.log(arguments...)
 
-MESSAGES =
-  ok: "ALL SYSTEMS GO"
-  disconnected: "<span>DISCONNECTED!</span>"
+class View
+
+  messages =
+    ok: -> "ALL SYSTEMS GO"
+    disconnected: -> "<span>DISCONNECTED!</span>"
+    playing: (sound) -> "PLAYING SOUND <span>#{sound}</span>"
+    playingTo: (listeners) -> "PLAYING TO <span>#{listeners}</span> #{if listeners is 1 then "PERSON" else "PEOPLE"}"
+    error: (message) -> "ERROR: <span>#{message}</span>"
+
+  setStatus: (key, params...) ->
+    message = messages[key](params...)
+    $('#status').html(message)
+
+  sound: (event) ->
+    $(event.currentTarget).attr('rel')
+
+  highlightSound: (sound) ->
+    @findSound(sound).addClass('hover')
+
+  dehighlightSound: (sound) ->
+    @findSound(sound).removeClass('hover')
+
+  findSound: (sound) ->
+    $("li[rel=#{sound}]")
+
+  revertStatus: ->
+    @setStatus "ok"
+    @overlay().hide()
+
+  setDisconnected: ->
+    @setStatus "disconnected"
+    @overlay().show()
+
+  sounds: ->
+    @__sounds ?= $('ul li')
+
+  overlay: ->
+    @__overlay ?= $('#overlay')
+
+  preview: ->
+    @__preview ?= $('#preview')
+
+  previewCheckbox: ->
+    @__previewCheckbox ?= @preview().find('#checkbox')
+
+  enablePreview: ->
+    @previewCheckbox().html('X')
+
+  disablePreview: ->
+    @previewCheckbox().html(' ')
 
 class App
 
-  constructor: ->
-    @controller = new Controller()
+  constructor: (@view) ->
+    @controller = new Controller(@view)
     @connect()
     @initSounds()
     @initPreview()
 
   initSounds: ->
-    $('ul li').click => @handleSoundClick(event)
+    @view.sounds().click => @handleSoundClick(event)
 
   initPreview: ->
-    $('#preview').click => @handlePreviewClick(event)
+    @view.preview().click => @handlePreviewClick(event)
     @preview = false
     @renderPreviewState()
 
@@ -29,7 +76,7 @@ class App
     @socket.onerror   = (data) => @onSocketError (data)
 
   handleSoundClick: (event) ->
-    sound = $(event.currentTarget).attr('rel')
+    sound = @view.sound(event)
     @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview} }}""")
 
   handlePreviewClick: (event) ->
@@ -37,11 +84,10 @@ class App
     @renderPreviewState()
 
   renderPreviewState: ->
-    checkbox = $('#preview #checkbox')
     if @preview
-      checkbox.html('X')
+      @view.enablePreview()
     else
-      checkbox.html(' ')
+      @view.disablePreview()
 
   onSocketMessage: (data) ->
     L 'onSocketMessage'
@@ -51,20 +97,21 @@ class App
 
   onSocketError: (data) ->
     L 'onSocketError'
-    $('#status').html("ERROR: <span>#{data.data}</span>")
+    @view.setStatus "error", data.data
 
   onSocketOpen: (data) ->
     L 'onSocketOpen'
-    $('#overlay').hide()
-    $('#status').html(MESSAGES["ok"])
+    @view.revertStatus()
 
   onSocketClose: (data) ->
     L 'onSocketClose'
-    $('#overlay').show()
-    $('#status').html(MESSAGES["disconnected"])
+    @view.setDisconnected()
     setTimeout((=> @connect()), 1000)
 
+
 class Controller
+
+  constructor: (@view) ->
 
   onPlayAudio: (args) ->
     L "Playing #{args.sound}"
@@ -72,14 +119,18 @@ class Controller
     mySound.play()
     mySound.bind("ended", => @handleSoundEnd(event, args.sound))
 
-    $("li[rel=#{args.sound}]").addClass('hover')
+    @view.highlightSound(args.sound)
+    @view.setStatus "playing", args.sound
 
-    $('#status').html("PLAYING SOUND <span>#{args.sound}</span>")
+  onPlayingSoundToOthers: (args) ->
+    @view.setStatus "playingTo", args.listeners
+    setTimeout((=> @view.revertStatus()), 2500)
 
   handleSoundEnd: (event, sound) ->
-    $("li[rel=#{sound}]").removeClass('hover')
-    $('#status').html(MESSAGES["ok"])
+    @view.dehighlightSound(sound)
+    @view.revertStatus()
 
 
-$ ->
-  new App()
+
+jQuery ->
+  new App(new View)

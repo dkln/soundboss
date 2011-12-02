@@ -1,19 +1,104 @@
 (function() {
-  var App, Controller, L, MESSAGES;
+  var App, Controller, L, View;
+  var __slice = Array.prototype.slice;
 
   L = function() {
     return console.log.apply(console, arguments);
   };
 
-  MESSAGES = {
-    ok: "ALL SYSTEMS GO",
-    disconnected: "<span>DISCONNECTED!</span>"
-  };
+  View = (function() {
+    var messages;
+
+    function View() {}
+
+    messages = {
+      ok: function() {
+        return "ALL SYSTEMS GO";
+      },
+      disconnected: function() {
+        return "<span>DISCONNECTED!</span>";
+      },
+      playing: function(sound) {
+        return "PLAYING SOUND <span>" + sound + "</span>";
+      },
+      playingTo: function(listeners) {
+        return "PLAYING TO <span>" + listeners + "</span> " + (listeners === 1 ? "PERSON" : "PEOPLE");
+      },
+      error: function(message) {
+        return "ERROR: <span>" + message + "</span>";
+      }
+    };
+
+    View.prototype.setStatus = function() {
+      var key, message, params;
+      key = arguments[0], params = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      message = messages[key].apply(messages, params);
+      return $('#status').html(message);
+    };
+
+    View.prototype.sound = function(event) {
+      return $(event.currentTarget).attr('rel');
+    };
+
+    View.prototype.highlightSound = function(sound) {
+      return this.findSound(sound).addClass('hover');
+    };
+
+    View.prototype.dehighlightSound = function(sound) {
+      return this.findSound(sound).removeClass('hover');
+    };
+
+    View.prototype.findSound = function(sound) {
+      return $("li[rel=" + sound + "]");
+    };
+
+    View.prototype.revertStatus = function() {
+      this.setStatus("ok");
+      return this.overlay().hide();
+    };
+
+    View.prototype.setDisconnected = function() {
+      this.setStatus("disconnected");
+      return this.overlay().show();
+    };
+
+    View.prototype.sounds = function() {
+      var _ref;
+      return (_ref = this.__sounds) != null ? _ref : this.__sounds = $('ul li');
+    };
+
+    View.prototype.overlay = function() {
+      var _ref;
+      return (_ref = this.__overlay) != null ? _ref : this.__overlay = $('#overlay');
+    };
+
+    View.prototype.preview = function() {
+      var _ref;
+      return (_ref = this.__preview) != null ? _ref : this.__preview = $('#preview');
+    };
+
+    View.prototype.previewCheckbox = function() {
+      var _ref;
+      return (_ref = this.__previewCheckbox) != null ? _ref : this.__previewCheckbox = this.preview().find('#checkbox');
+    };
+
+    View.prototype.enablePreview = function() {
+      return this.previewCheckbox().html('X');
+    };
+
+    View.prototype.disablePreview = function() {
+      return this.previewCheckbox().html(' ');
+    };
+
+    return View;
+
+  })();
 
   App = (function() {
 
-    function App() {
-      this.controller = new Controller();
+    function App(view) {
+      this.view = view;
+      this.controller = new Controller(this.view);
       this.connect();
       this.initSounds();
       this.initPreview();
@@ -21,14 +106,14 @@
 
     App.prototype.initSounds = function() {
       var _this = this;
-      return $('ul li').click(function() {
+      return this.view.sounds().click(function() {
         return _this.handleSoundClick(event);
       });
     };
 
     App.prototype.initPreview = function() {
       var _this = this;
-      $('#preview').click(function() {
+      this.view.preview().click(function() {
         return _this.handlePreviewClick(event);
       });
       this.preview = false;
@@ -55,7 +140,7 @@
 
     App.prototype.handleSoundClick = function(event) {
       var sound;
-      sound = $(event.currentTarget).attr('rel');
+      sound = this.view.sound(event);
       return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + " }}");
     };
 
@@ -65,12 +150,10 @@
     };
 
     App.prototype.renderPreviewState = function() {
-      var checkbox;
-      checkbox = $('#preview #checkbox');
       if (this.preview) {
-        return checkbox.html('X');
+        return this.view.enablePreview();
       } else {
-        return checkbox.html(' ');
+        return this.view.disablePreview();
       }
     };
 
@@ -84,20 +167,18 @@
 
     App.prototype.onSocketError = function(data) {
       L('onSocketError');
-      return $('#status').html("ERROR: <span>" + data.data + "</span>");
+      return this.view.setStatus("error", data.data);
     };
 
     App.prototype.onSocketOpen = function(data) {
       L('onSocketOpen');
-      $('#overlay').hide();
-      return $('#status').html(MESSAGES["ok"]);
+      return this.view.revertStatus();
     };
 
     App.prototype.onSocketClose = function(data) {
       var _this = this;
       L('onSocketClose');
-      $('#overlay').show();
-      $('#status').html(MESSAGES["disconnected"]);
+      this.view.setDisconnected();
       return setTimeout((function() {
         return _this.connect();
       }), 1000);
@@ -109,7 +190,9 @@
 
   Controller = (function() {
 
-    function Controller() {}
+    function Controller(view) {
+      this.view = view;
+    }
 
     Controller.prototype.onPlayAudio = function(args) {
       var mySound;
@@ -122,21 +205,29 @@
       mySound.bind("ended", function() {
         return _this.handleSoundEnd(event, args.sound);
       });
-      $("li[rel=" + args.sound + "]").addClass('hover');
-      return $('#status').html("PLAYING SOUND <span>" + args.sound + "</span>");
+      this.view.highlightSound(args.sound);
+      return this.view.setStatus("playing", args.sound);
+    };
+
+    Controller.prototype.onPlayingSoundToOthers = function(args) {
+      var _this = this;
+      this.view.setStatus("playingTo", args.listeners);
+      return setTimeout((function() {
+        return _this.view.revertStatus();
+      }), 2500);
     };
 
     Controller.prototype.handleSoundEnd = function(event, sound) {
-      $("li[rel=" + sound + "]").removeClass('hover');
-      return $('#status').html(MESSAGES["ok"]);
+      this.view.dehighlightSound(sound);
+      return this.view.revertStatus();
     };
 
     return Controller;
 
   })();
 
-  $(function() {
-    return new App();
+  jQuery(function() {
+    return new App(new View);
   });
 
 }).call(this);

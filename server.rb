@@ -29,6 +29,7 @@ EventMachine.run do
         sockets.each do |other_socket|
           other_socket.send(message) if other_socket != socket
         end
+        socket.send({action: "playingSoundToOthers", args: { listeners: sockets.size - 1 }}.to_json)
       end
 
     end
