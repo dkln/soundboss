@@ -41,10 +41,18 @@ class App
 class Controller
   onPlayAudio: (args) ->
     console.log "playing #{args.sound}"
+
     mySound = new buzz.sound( "/audio/#{args.sound}", { formats: [ "ogg", "mp3" ] } )
     mySound.play()
 
+    mySound.bind("ended", => @handleSoundEnd(event, args.sound))
+
+    $("li[rel=#{args.sound}]").addClass('hover')
+
     $('#status').html("PLAYING SOUND <span>#{args.sound}</span>")
+
+  handleSoundEnd: (event, sound) ->
+    $("li[rel=#{sound}]").removeClass('hover')
 
 
 $ ->

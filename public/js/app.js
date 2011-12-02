@@ -73,12 +73,21 @@
 
     Controller.prototype.onPlayAudio = function(args) {
       var mySound;
+      var _this = this;
       console.log("playing " + args.sound);
       mySound = new buzz.sound("/audio/" + args.sound, {
         formats: ["ogg", "mp3"]
       });
       mySound.play();
+      mySound.bind("ended", function() {
+        return _this.handleSoundEnd(event, args.sound);
+      });
+      $("li[rel=" + args.sound + "]").addClass('hover');
       return $('#status').html("PLAYING SOUND <span>" + args.sound + "</span>");
+    };
+
+    Controller.prototype.handleSoundEnd = function(event, sound) {
+      return $("li[rel=" + sound + "]").removeClass('hover');
     };
 
     return Controller;

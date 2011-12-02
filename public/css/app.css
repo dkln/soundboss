@@ -1,8 +1,14 @@
+@keyframes 'blink' {
+    0% { background: rgba(255,0,0,0.5); }
+    50% { background: rgba(255,0,0,0); }
+    100% { background: rgba(255,0,0,0.5); }
+}
+
 @font-face {
   font-family: 'VT323';
   font-style: normal;
   font-weight: normal;
-  src: local('VT323'), url('http://themes.googleusercontent.com/static/fonts/vt323/v2/SSPdB6sO_7a9ZMMiCroIGqCWcynf_cDxXwCLxiixG1c.woff') format('woff');
+  src: local('VT323'), url('/webfont.woff') format('woff');
 }
 
 body {
@@ -31,27 +37,38 @@ h1 {
     color: #ff0000;
   }
 
-ul {
+#content {
+  width: 900px;
   display: block;
   margin: 0 auto;
-  padding: 15px;
+}
+
+ul {
+  display: block;
+  padding: 4px;
   width: 900px;
   background-color: #000;
+  float: left;
 }
 
   li {
     background-color: #000;
     margin: 4px;
-    display: inline-block;
+    display: block;
+    float: left;
     padding: 2px 8px;
     border: 4px solid #fff;
     font-size: 32px;
     cursor: pointer;
   }
 
-  li:hover {
+  li:hover, li.hover {
     background-color: #fff;
     color: #000;
+  }
+
+  li.hover {
+    background-color: #ff0000;
   }
 
 div#status {
