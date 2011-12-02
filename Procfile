@@ -1,2 +1,2 @@
-server: ruby server/server.rb
+server: ruby server.rb
 client: thin start
