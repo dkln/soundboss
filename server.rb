@@ -33,6 +33,6 @@ EventMachine.run do
 
   end
 
-  puts "Server started and listening at http://#{HOST}:#{PORT}"
+  puts "Server started successfully"
 
 end
