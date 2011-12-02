@@ -1,0 +1,40 @@
+@font-face {
+  font-family: 'VT323';
+  font-style: normal;
+  font-weight: normal;
+  src: local('VT323'), url('http://themes.googleusercontent.com/static/fonts/vt323/v2/SSPdB6sO_7a9ZMMiCroIGqCWcynf_cDxXwCLxiixG1c.woff') format('woff');
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  font-family: 'VT323';
+  font-size: 32px;
+  padding: 0;
+}
+
+h1 {
+  margin: 0;
+}
+
+ul {
+  display: block
+  margin: 0;
+  padding: 0;
+}
+
+  li {
+    margin: 0;
+    display: block;
+    float: left;
+    padding: 2px 8px;
+    border: 4px solid #fff;
+    margin-right: 4px;
+    font-size: 32px;
+    cursor: pointer;
+  }
+
+  li:hover {
+    background-color: #fff;
+    color: #000;
+  }
