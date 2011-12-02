@@ -11,3 +11,7 @@ Start the server:
     ./script/server
 
 Go to http://localhost:3000/
+
+## Development
+
+Run `guard` to automatically compile coffeescripts.
