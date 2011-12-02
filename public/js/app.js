@@ -11,6 +11,7 @@
         return _this.onSocketMessage(data);
       };
       this.initSounds();
+      this.initPreview();
     }
 
     App.prototype.initSounds = function() {
@@ -20,10 +21,39 @@
       });
     };
 
+    App.prototype.initPreview = function() {
+      var _this = this;
+      $('#preview').click(function() {
+        return _this.handlePreviewClick(event);
+      });
+      this.preview = false;
+      return this.renderPreviewState();
+    };
+
     App.prototype.handleSoundClick = function(event) {
       var sound;
       sound = $(event.currentTarget).attr('rel');
-      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\" }}");
+      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + " }}");
+    };
+
+    App.prototype.handlePreviewClick = function(event) {
+      event.target.blur();
+      this.preview = !this.preview;
+      return this.renderPreviewState();
+    };
+
+    App.prototype.renderPreviewState = function() {
+      var checkbox;
+      checkbox = $('#preview #checkbox');
+      if (this.preview) {
+        return checkbox.html('X').attr({
+          "class": 'enabled'
+        });
+      } else {
+        return checkbox.html(' ').attr({
+          "class": 'disabled'
+        });
+      }
     };
 
     App.prototype.onSocketMessage = function(data) {

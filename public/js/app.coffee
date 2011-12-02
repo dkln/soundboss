@@ -5,13 +5,31 @@ class App
     @socket.onmessage = (data) => @onSocketMessage (data)
 
     @initSounds()
+    @initPreview()
 
   initSounds: ->
     $('ul li').click => @handleSoundClick(event)
 
+  initPreview: ->
+    $('#preview').click => @handlePreviewClick(event)
+    @preview = false
+    @renderPreviewState()
+
   handleSoundClick: (event) ->
     sound = $(event.currentTarget).attr('rel')
-    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}" }}""")
+    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview} }}""")
+
+  handlePreviewClick: (event) ->
+    event.target.blur()
+    @preview = !@preview
+    @renderPreviewState()
+
+  renderPreviewState: ->
+    checkbox = $('#preview #checkbox')
+    if @preview
+      checkbox.html('X').attr(class: 'enabled')
+    else
+      checkbox.html(' ').attr(class: 'disabled')
 
   onSocketMessage: (data) ->
     message = $.parseJSON(data.data)
