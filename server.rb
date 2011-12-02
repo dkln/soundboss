@@ -5,8 +5,13 @@ require 'json'
 
 sockets = []
 
+HOST = '0.0.0.0'
+PORT = 8080
+
 EventMachine.run do
-  EventMachine::WebSocket.start(host: '0.0.0.0', port: 8080) do |socket|
+
+  EventMachine::WebSocket.start(host: HOST, port: PORT) do |socket|
+
     socket.onopen do
       puts "Socket opened"
       sockets << socket
@@ -25,5 +30,9 @@ EventMachine.run do
       puts "Socket closed"
       sockets.delete(socket)
     end
+
   end
+
+  puts "Server started successfully"
+
 end

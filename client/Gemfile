@@ -1,4 +1,0 @@
-source :rubygems
-
-gem 'guard-coffeescript'
-gem 'thin'
