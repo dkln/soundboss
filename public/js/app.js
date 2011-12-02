@@ -21,7 +21,9 @@
     };
 
     App.prototype.handleSoundClick = function(event) {
-      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + ($(event.currentTarget).attr('rel')) + "\" }}");
+      var sound;
+      sound = $(event.currentTarget).attr('rel');
+      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\" }}");
     };
 
     App.prototype.onSocketMessage = function(data) {

@@ -10,7 +10,8 @@ class App
     $('ul li').click => @handleSoundClick(event)
 
   handleSoundClick: (event) ->
-    @socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"#{$(event.currentTarget).attr('rel')}\" }}")
+    sound = $(event.currentTarget).attr('rel')
+    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}" }}""")
 
   onSocketMessage: (data) ->
     message = $.parseJSON(data.data)
