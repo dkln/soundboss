@@ -40,7 +40,12 @@
     function Controller() {}
 
     Controller.prototype.onPlayAudio = function(args) {
+      var mySound;
       console.log("playing " + args.sound);
+      mySound = new buzz.sound("/audio/" + args.sound, {
+        formats: ["ogg", "mp3"]
+      });
+      mySound.play();
       return $('#status').html("PLAYING SOUND <span>" + args.sound + "</span>");
     };
 

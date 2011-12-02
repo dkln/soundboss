@@ -22,6 +22,9 @@ class App
 class Controller
   onPlayAudio: (args) ->
     console.log "playing #{args.sound}"
+    mySound = new buzz.sound( "/audio/#{args.sound}", { formats: [ "ogg", "mp3" ] } )
+    mySound.play()
+
     $('#status').html("PLAYING SOUND <span>#{args.sound}</span>")
 
 
