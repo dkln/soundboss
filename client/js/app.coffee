@@ -22,6 +22,7 @@ class App
 class Controller
   onPlayAudio: (args) ->
     console.log "playing #{args.sound}"
+    $('#status').html("PLAYING SOUND <span>#{args.sound}</span>")
 
 
 $ ->

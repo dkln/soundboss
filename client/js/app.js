@@ -40,7 +40,8 @@
     function Controller() {}
 
     Controller.prototype.onPlayAudio = function(args) {
-      return console.log("playing " + args.sound);
+      console.log("playing " + args.sound);
+      return $('#status').html("PLAYING SOUND <span>" + args.sound + "</span>");
     };
 
     return Controller;
