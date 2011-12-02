@@ -13,7 +13,7 @@
 
 body {
   background-color: #000;
-  background: url('/img/bg.jpg');
+  background-image: url('/img/bg.jpg');
   color: #fff;
   font-family: 'VT323';
   font-size: 32px;
@@ -109,3 +109,14 @@ div#preview {
     margin: 0 3px;
     color: #0f0;
   }
+
+#overlay {
+  background: #000;
+  position: fixed;
+  top: 70px;
+  bottom: 60px;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  opacity: 0.8;
+}
