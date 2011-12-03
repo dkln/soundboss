@@ -31,10 +31,12 @@ h1 {
   text-align: center;
   background-color: #000;
   padding: 4px;
+  letter-spacing: 2px;
 }
 
   span {
     color: #ff0000;
+    margin-right: 5px;
   }
 
 #content {
