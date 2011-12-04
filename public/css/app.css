@@ -18,6 +18,7 @@ body {
   font-family: 'VT323';
   font-size: 32px;
   padding: 0;
+  position: relative;
   -webkit-user-select: none;
   -khtml-user-select: none;
   -moz-user-select: none;
@@ -91,26 +92,41 @@ div#status {
     text-transform: uppercase;
   }
 
-div#preview {
+div#options {
   background-color: #000;
+  height: 32px;
   padding: 15px;
   color: #fff;
-  font-size: 32px;
   text-align: right;
   width: 50%;
+  position: fixed;
+  right: 0;
+  bottom: 0;
+}
+
+div.option {
+  background-color: #000;
+  padding: 15px;
+  font-size: 32px;
+  color: #fff;
+  text-align: right;
   right: 0;
   bottom: 0;
   position: fixed;
   cursor: pointer;
 }
-  div#preview span {
+  div.option span {
     color: #33f;
   }
 
-  div#preview #checkbox {
+  div.option .checkbox {
     margin: 0 3px;
     color: #0f0;
   }
+
+div#reverb {
+  right: 420px;
+}
 
 #overlay {
   background: #000;

@@ -43,13 +43,25 @@ class View
     @__preview ?= $('#preview')
 
   previewCheckbox: ->
-    @__previewCheckbox ?= @preview().find('#checkbox')
+    @__previewCheckbox ?= @preview().find('.checkbox')
 
   enablePreview: ->
     @previewCheckbox().html('X')
 
   disablePreview: ->
     @previewCheckbox().html(' ')
+
+  reverb: ->
+    @__reverb ?= $('#reverb')
+
+  reverbCheckbox: ->
+    @__reverbCheckbox ?= @reverb().find('.checkbox')
+
+  enableReverb: ->
+    @reverbCheckbox().html('X')
+
+  disableReverb: ->
+    @reverbCheckbox().html(' ')
 
 class App
 
@@ -58,6 +70,7 @@ class App
     @connect()
     @initSounds()
     @initPreview()
+    @initReverb()
 
   initSounds: ->
     @view.sounds().click => @handleSoundClick(event)
@@ -66,6 +79,11 @@ class App
     @view.preview().click => @handlePreviewClick(event)
     @preview = false
     @renderPreviewState()
+
+  initReverb: ->
+    @view.reverb().click => @handleReverbClick(event)
+    @reverb = false
+    @renderReverbState()
 
   connect: ->
     L 'starting connection'
@@ -77,7 +95,7 @@ class App
 
   handleSoundClick: (event) ->
     sound = @view.sound(event)
-    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview} }}""")
+    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview}, "reverb": "#{@reverb}" }}""")
 
   handlePreviewClick: (event) ->
     @preview = !@preview
@@ -88,6 +106,16 @@ class App
       @view.enablePreview()
     else
       @view.disablePreview()
+
+  handleReverbClick: (event) ->
+    @reverb = !@reverb
+    @renderReverbState()
+
+  renderReverbState: ->
+    if @reverb
+      @view.enableReverb()
+    else
+      @view.disableReverb()
 
   onSocketMessage: (data) ->
     L 'onSocketMessage'
@@ -112,12 +140,11 @@ class App
 class Controller
 
   constructor: (@view) ->
+    @soundplayer = new SoundPlayer()
 
   onPlayAudio: (args) ->
     L "Playing #{args.sound}"
-    mySound = new buzz.sound( "/audio/#{args.sound}", { formats: [ "ogg", "mp3" ] } )
-    mySound.play()
-    mySound.bind("ended", => @handleSoundEnd(event, args.sound))
+    @soundplayer.play(args.sound, { reverb: args.reverb, callback: @handleSoundEnd} )
 
     @view.highlightSound(args.sound)
     @view.setStatus "playing", args.sound
@@ -126,10 +153,40 @@ class Controller
     @view.setStatus "playingTo", args.listeners
     setTimeout((=> @view.revertStatus()), 2500)
 
-  handleSoundEnd: (event, sound) ->
+  handleSoundEnd: (sound) =>
     @view.dehighlightSound(sound)
     @view.revertStatus()
 
+
+class SoundPlayer
+  constructor: ->
+    @context = new webkitAudioContext()
+
+    @reverb = @context.createConvolver()
+    @reverb.connect(@context.destination)
+    @load("/audio/reverb.wav", (response) =>
+      @reverb.buffer = @context.createBuffer(response, false))
+
+  play: (path, options) ->
+    @sample = @context.createBufferSource()
+    @sample.connect(@context.destination)
+    @sample.connect(@reverb) if options.reverb == "true"
+    @load("/audio/#{path}.ogg", (response) =>
+      @sample.buffer = @context.createBuffer(response, false)
+      @sample.noteOn(0)
+      setTimeout(=>
+        @sample.noteOff(0)
+        options.callback(path)
+      , @sample.buffer.duration * 1000)
+    )
+
+  load: (path, callback) ->
+    request = new XMLHttpRequest()
+    request.open("GET", path, true)
+    request.responseType = "arraybuffer"
+    request.onload = ->
+      callback(request.response)
+    request.send()
 
 
 jQuery ->

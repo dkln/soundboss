@@ -1,6 +1,6 @@
 (function() {
-  var App, Controller, L, View;
-  var __slice = Array.prototype.slice;
+  var App, Controller, L, SoundPlayer, View;
+  var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   L = function() {
     return console.log.apply(console, arguments);
@@ -79,7 +79,7 @@
 
     View.prototype.previewCheckbox = function() {
       var _ref;
-      return (_ref = this.__previewCheckbox) != null ? _ref : this.__previewCheckbox = this.preview().find('#checkbox');
+      return (_ref = this.__previewCheckbox) != null ? _ref : this.__previewCheckbox = this.preview().find('.checkbox');
     };
 
     View.prototype.enablePreview = function() {
@@ -88,6 +88,24 @@
 
     View.prototype.disablePreview = function() {
       return this.previewCheckbox().html(' ');
+    };
+
+    View.prototype.reverb = function() {
+      var _ref;
+      return (_ref = this.__reverb) != null ? _ref : this.__reverb = $('#reverb');
+    };
+
+    View.prototype.reverbCheckbox = function() {
+      var _ref;
+      return (_ref = this.__reverbCheckbox) != null ? _ref : this.__reverbCheckbox = this.reverb().find('.checkbox');
+    };
+
+    View.prototype.enableReverb = function() {
+      return this.reverbCheckbox().html('X');
+    };
+
+    View.prototype.disableReverb = function() {
+      return this.reverbCheckbox().html(' ');
     };
 
     return View;
@@ -102,6 +120,7 @@
       this.connect();
       this.initSounds();
       this.initPreview();
+      this.initReverb();
     }
 
     App.prototype.initSounds = function() {
@@ -118,6 +137,15 @@
       });
       this.preview = false;
       return this.renderPreviewState();
+    };
+
+    App.prototype.initReverb = function() {
+      var _this = this;
+      this.view.reverb().click(function() {
+        return _this.handleReverbClick(event);
+      });
+      this.reverb = false;
+      return this.renderReverbState();
     };
 
     App.prototype.connect = function() {
@@ -141,7 +169,7 @@
     App.prototype.handleSoundClick = function(event) {
       var sound;
       sound = this.view.sound(event);
-      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + " }}");
+      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + ", \"reverb\": \"" + this.reverb + "\" }}");
     };
 
     App.prototype.handlePreviewClick = function(event) {
@@ -154,6 +182,19 @@
         return this.view.enablePreview();
       } else {
         return this.view.disablePreview();
+      }
+    };
+
+    App.prototype.handleReverbClick = function(event) {
+      this.reverb = !this.reverb;
+      return this.renderReverbState();
+    };
+
+    App.prototype.renderReverbState = function() {
+      if (this.reverb) {
+        return this.view.enableReverb();
+      } else {
+        return this.view.disableReverb();
       }
     };
 
@@ -192,18 +233,15 @@
 
     function Controller(view) {
       this.view = view;
+      this.handleSoundEnd = __bind(this.handleSoundEnd, this);
+      this.soundplayer = new SoundPlayer();
     }
 
     Controller.prototype.onPlayAudio = function(args) {
-      var mySound;
-      var _this = this;
       L("Playing " + args.sound);
-      mySound = new buzz.sound("/audio/" + args.sound, {
-        formats: ["ogg", "mp3"]
-      });
-      mySound.play();
-      mySound.bind("ended", function() {
-        return _this.handleSoundEnd(event, args.sound);
+      this.soundplayer.play(args.sound, {
+        reverb: args.reverb,
+        callback: this.handleSoundEnd
       });
       this.view.highlightSound(args.sound);
       return this.view.setStatus("playing", args.sound);
@@ -217,12 +255,54 @@
       }), 2500);
     };
 
-    Controller.prototype.handleSoundEnd = function(event, sound) {
+    Controller.prototype.handleSoundEnd = function(sound) {
       this.view.dehighlightSound(sound);
       return this.view.revertStatus();
     };
 
     return Controller;
+
+  })();
+
+  SoundPlayer = (function() {
+
+    function SoundPlayer() {
+      var _this = this;
+      this.context = new webkitAudioContext();
+      this.reverb = this.context.createConvolver();
+      this.reverb.connect(this.context.destination);
+      this.load("/audio/reverb.wav", function(response) {
+        return _this.reverb.buffer = _this.context.createBuffer(response, false);
+      });
+    }
+
+    SoundPlayer.prototype.play = function(path, options) {
+      var _this = this;
+      this.sample = this.context.createBufferSource();
+      this.sample.connect(this.context.destination);
+      if (options.reverb === "true") this.sample.connect(this.reverb);
+      return this.load("/audio/" + path + ".ogg", function(response) {
+        _this.sample.buffer = _this.context.createBuffer(response, false);
+        _this.sample.noteOn(0);
+        return setTimeout(function() {
+          _this.sample.noteOff(0);
+          return options.callback(path);
+        }, _this.sample.buffer.duration * 1000);
+      });
+    };
+
+    SoundPlayer.prototype.load = function(path, callback) {
+      var request;
+      request = new XMLHttpRequest();
+      request.open("GET", path, true);
+      request.responseType = "arraybuffer";
+      request.onload = function() {
+        return callback(request.response);
+      };
+      return request.send();
+    };
+
+    return SoundPlayer;
 
   })();
 
