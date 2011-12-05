@@ -23,7 +23,7 @@ class View
     @findSound(sound).removeClass('hover')
 
   findSound: (sound) ->
-    $("li[rel=#{sound}]")
+    $("li[rel^=#{sound}]")
 
   revertStatus: ->
     @setStatus "ok"
@@ -143,11 +143,19 @@ class Controller
     @soundplayer = new SoundPlayer()
 
   onPlayAudio: (args) ->
-    L "Playing #{args.sound}"
-    @soundplayer.play(args.sound, { reverb: args.reverb, callback: @handleSoundEnd} )
+    matches = /(.*)__([0-9]+)$/.exec(args.sound)
+    file_base = file = args.sound
+    if matches && matches.length > 0
+      sound_index = Math.ceil(Math.random()*parseInt(matches[2]))
+      L "Index: #{sound_index}"
+      file_base = matches[1]
+      file = "#{file_base}#{sound_index}"
+    L "Playing #{file_base}"
 
-    @view.highlightSound(args.sound)
-    @view.setStatus "playing", args.sound
+    @soundplayer.play(file, { reverb: args.reverb, callback: @handleSoundEnd} )
+
+    @view.highlightSound(file_base)
+    @view.setStatus "playing", file_base
 
   onPlayingSoundToOthers: (args) ->
     @view.setStatus "playingTo", args.listeners
@@ -156,7 +164,6 @@ class Controller
   handleSoundEnd: (sound) =>
     @view.dehighlightSound(sound)
     @view.revertStatus()
-
 
 class SoundPlayer
   constructor: ->

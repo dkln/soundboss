@@ -49,7 +49,7 @@
     };
 
     View.prototype.findSound = function(sound) {
-      return $("li[rel=" + sound + "]");
+      return $("li[rel^=" + sound + "]");
     };
 
     View.prototype.revertStatus = function() {
@@ -238,13 +238,22 @@
     }
 
     Controller.prototype.onPlayAudio = function(args) {
-      L("Playing " + args.sound);
-      this.soundplayer.play(args.sound, {
+      var file, file_base, matches, sound_index;
+      matches = /(.*)__([0-9]+)$/.exec(args.sound);
+      file_base = file = args.sound;
+      if (matches && matches.length > 0) {
+        sound_index = Math.ceil(Math.random() * parseInt(matches[2]));
+        L("Index: " + sound_index);
+        file_base = matches[1];
+        file = "" + file_base + sound_index;
+      }
+      L("Playing " + file_base);
+      this.soundplayer.play(file, {
         reverb: args.reverb,
         callback: this.handleSoundEnd
       });
-      this.view.highlightSound(args.sound);
-      return this.view.setStatus("playing", args.sound);
+      this.view.highlightSound(file_base);
+      return this.view.setStatus("playing", file_base);
     };
 
     Controller.prototype.onPlayingSoundToOthers = function(args) {
