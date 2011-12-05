@@ -26,6 +26,9 @@
       },
       error: function(message) {
         return "ERROR: <span>" + message + "</span>";
+      },
+      connections: function(amount) {
+        return "CONNECTIONS: <span>" + amount + "</span>";
       }
     };
 
@@ -260,17 +263,26 @@
       return this.view.setStatus("playing", file_base);
     };
 
+    Controller.prototype.onConnectionChange = function(args) {
+      this.view.setStatus("connections", args.listeners);
+      return this.timeoutStatus();
+    };
+
     Controller.prototype.onPlayingSoundToOthers = function(args) {
-      var _this = this;
       this.view.setStatus("playingTo", args.listeners);
-      return setTimeout((function() {
-        return _this.view.revertStatus();
-      }), 2500);
+      return this.timeoutStatus();
     };
 
     Controller.prototype.handleSoundEnd = function(sound) {
       this.view.dehighlightSound(sound);
       return this.view.revertStatus();
+    };
+
+    Controller.prototype.timeoutStatus = function() {
+      var _this = this;
+      return setTimeout((function() {
+        return _this.view.revertStatus();
+      }), 2500);
     };
 
     return Controller;

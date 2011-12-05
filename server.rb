@@ -8,6 +8,12 @@ sockets = []
 HOST = '0.0.0.0'
 PORT = 8080
 
+def connection_change(sockets)
+  sockets.each do |socket|
+    socket.send({action: "connectionChange", args: { listeners: sockets.size}}.to_json)
+  end
+end
+
 EventMachine.run do
 
   EventMachine::WebSocket.start(host: HOST, port: PORT) do |socket|
@@ -15,6 +21,7 @@ EventMachine.run do
     socket.onopen do
       puts "Socket opened"
       sockets << socket
+      connection_change sockets
     end
 
     socket.onmessage do |message|
@@ -37,6 +44,7 @@ EventMachine.run do
     socket.onclose do
       puts "Socket closed"
       sockets.delete(socket)
+      connection_change sockets
     end
 
   end

@@ -8,6 +8,7 @@ class View
     playing: (sound) -> "PLAYING SOUND <span>#{sound}</span>"
     playingTo: (listeners) -> "PLAYING TO <span>#{listeners}</span> #{if listeners is 1 then "PERSON" else "PEOPLE"}"
     error: (message) -> "ERROR: <span>#{message}</span>"
+    connections: (amount) -> "CONNECTIONS: <span>#{amount}</span>"
 
   setStatus: (key, params...) ->
     message = messages[key](params...)
@@ -159,15 +160,24 @@ class Controller
     @view.highlightSound(file_base)
     @view.setStatus "playing", file_base
 
+  onConnectionChange: (args) ->
+    @view.setStatus "connections", args.listeners
+    @timeoutStatus()
+
   onPlayingSoundToOthers: (args) ->
     @view.setStatus "playingTo", args.listeners
-    setTimeout((=> @view.revertStatus()), 2500)
+    @timeoutStatus()
 
   handleSoundEnd: (sound) =>
     @view.dehighlightSound(sound)
     @view.revertStatus()
 
+  timeoutStatus: ->
+    setTimeout((=> @view.revertStatus()), 2500)
+
+
 class SoundPlayer
+
   constructor: ->
     @context = new webkitAudioContext()
 
