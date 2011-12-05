@@ -3,16 +3,15 @@ require 'bundler/setup'
 require 'em-websocket'
 require 'json'
 
-sockets = []
+$:.unshift File.expand_path('../lib', __FILE__)
+
+require 'pool'
+require 'messenger'
 
 HOST = '0.0.0.0'
 PORT = 8080
 
-def connection_change(sockets)
-  sockets.each do |socket|
-    socket.send({action: "connectionChange", args: { listeners: sockets.size}}.to_json)
-  end
-end
+pool = Pool.new
 
 EventMachine.run do
 
@@ -20,31 +19,17 @@ EventMachine.run do
 
     socket.onopen do
       puts "Socket opened"
-      sockets << socket
-      connection_change sockets
+      pool.add socket
     end
 
     socket.onmessage do |message|
-      hash = JSON.parse(message)
-      puts "Handling message: #{hash.inspect}"
-
-      if hash.fetch("args"){{}}["preview"]
-        puts "Playing preview"
-        socket.send(message)
-      else
-        puts "Broadcasting sound to other sockets"
-        sockets.each do |other_socket|
-          other_socket.send(message) if other_socket != socket
-        end
-        socket.send({action: "playingSoundToOthers", args: { listeners: sockets.size - 1 }}.to_json)
-      end
-
+      puts "Handling message: #{message}"
+      pool.message socket, message
     end
 
     socket.onclose do
       puts "Socket closed"
-      sockets.delete(socket)
-      connection_change sockets
+      pool.remove socket
     end
 
   end
