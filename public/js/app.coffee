@@ -14,7 +14,7 @@ class View
     $('#status').html(message)
 
   sound: (event) ->
-    $(event.currentTarget).attr('rel')
+    $(event.currentTarget).attr('data-file')
 
   versions: (event) ->
     $(event.currentTarget).attr('data-versions')
@@ -26,7 +26,7 @@ class View
     @findSound(sound).removeClass('hover')
 
   findSound: (sound) ->
-    $("li[rel^=#{sound}]")
+    $("li[data-file=#{sound}]")
 
   revertStatus: ->
     @setStatus "ok"

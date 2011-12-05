@@ -37,7 +37,7 @@
     };
 
     View.prototype.sound = function(event) {
-      return $(event.currentTarget).attr('rel');
+      return $(event.currentTarget).attr('data-file');
     };
 
     View.prototype.versions = function(event) {
@@ -53,7 +53,7 @@
     };
 
     View.prototype.findSound = function(sound) {
-      return $("li[rel^=" + sound + "]");
+      return $("li[data-file=" + sound + "]");
     };
 
     View.prototype.revertStatus = function() {

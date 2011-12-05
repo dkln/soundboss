@@ -24,13 +24,13 @@ To add sounds to the soundboard, create MP3 and Ogg Vorbis versions of your samp
 and put these in the `./public/audio` folder.
 
 Next, add a single line to the `<ul>` list in the `./public/index.html` file, with
-a `rel` corresponding to the files you created.
+a `data-file` corresponding to the files you created.
 
 For example, to add a 'cool-whip' sample, create `cool-whip.mp3` and `cool-whip.ogg`
 files, add them to `./public/audio`, and add the following line in `index.html`:
 
 ``` html
-<li rel='cool-whip'>COOL WHIP</li>
+<li data-file='cool-whip'>COOL WHIP</li>
 ```
 
 To convert a sound to both `.ogg` and `.mp3`, run:
@@ -42,7 +42,7 @@ To add multiple versions of a sample, add a numberic suffix to the filenmes
 the HTML entry:
 
 ``` html
-<li rel='jobs' data-version='11'>THEY TOOK'R JUBS</li>
+<li data-file='jobs' data-versions='11'>THEY TOOK'R JUBS</li>
 ```
 
 A random sound will be played for every listener.
