@@ -51,18 +51,27 @@ ul {
   padding: 4px;
   width: 900px;
   background-color: #000;
-  float: left;
+  display: -webkit-box;
+  -webkit-box-orient: horizontal;
+
+  display: -moz-box;
+  -moz-box-orient: horizontal;
+
+  display: box;
+  box-orient: horizontal;
 }
 
-  li {
+  ul > li {
     background-color: #000;
     margin: 4px;
-    display: block;
-    float: left;
+    -webkit-box-flex: 1;
+    -moz-box-flex: 1;
+    box-flex: 1;
     padding: 2px 8px;
     border: 4px solid #fff;
     font-size: 32px;
     cursor: pointer;
+    text-align: center;
   }
 
   li:hover, li.hover {
