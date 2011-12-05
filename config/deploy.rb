@@ -9,26 +9,29 @@ set :use_sudo,        false
 set :thin_config,     'config/thin.yml'
 set :branch,          'capistrano'
 set :rvm_ruby_string, '1.9.3@soundboss'
+set :rvm_type,        :user
+set :keep_releases,   5
 
 set :scm, :git
 # Or: `accurev`, `bzr`, `cvs`, `darcs`, `git`, `mercurial`, `perforce`, `subversion` or `none`
 
 server "#{main_server}", :web, :app, :db, :primary => true
 
+namespace :rvm do
+  task :trust_rvmrc do
+    run "cd #{release_path}; rvm rvmrc trust #{release_path}"
+  end
+end
+
 namespace :deploy do
-  desc "Start the Thin process"
-  task :start do
-    sudo "bundle exec thin start -C #{thin_config}"
-  end
-
-  desc "Stop the Thin process"
-  task :stop do
-    sudo "bundle exec thin stop -C #{thin_config}"
-  end
-
-  desc "Restart the Thin process"
+  desc "Restart the servers"
   task :restart do
-    sudo "bundle exec thin restart -C #{thin_config}"
+    run "cd #{release_path}; kill `ps -u #{user}|awk '/ruby/{print $1}'` || echo 'nothing to kill'"
+    run "screen -wipe || echo 'no screens to wipe'"
+    run "cd #{release_path}; screen -AmdS websocket bundle exec ruby server.rb"
+    run "touch #{release_path}/tmp/restart.txt"
   end
 
 end
+
+after "deploy:update_code", "rvm:trust_rvmrc"
