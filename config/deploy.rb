@@ -2,7 +2,6 @@ set :application,     "soundboss"
 set :repository,      "https://github.com/dkln/soundboss.git"
 set :main_server,     "fixalist.nl"
 set :user,            "soundboss"
-set :password,        "dit is precies wat ik wil"
 set :deploy_to,       '/home/soundboss/soundboss/'
 set :deploy_via,      :copy
 set :use_sudo,        false
