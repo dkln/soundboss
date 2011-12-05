@@ -34,3 +34,4 @@ namespace :deploy do
 end
 
 after "deploy:update_code", "rvm:trust_rvmrc"
+after "deploy", "deploy:cleanup"
