@@ -1,13 +1,14 @@
-set :application, "soundboss"
-set :repository,  "https://github.com/dkln/soundboss.git"
-set :main_server, "fixalist.nl"
-set :user,        "soundboss"
-set :password,    "dit is precies wat ik wil"
-set :deploy_to,   '/home/soundboss/soundboss/'
-set :deploy_via,  :copy
-set :use_sudo,    false
-set :thin_config, 'config/thin.yml'
-set :branch,      'capistrano'
+set :application,     "soundboss"
+set :repository,      "https://github.com/dkln/soundboss.git"
+set :main_server,     "fixalist.nl"
+set :user,            "soundboss"
+set :password,        "dit is precies wat ik wil"
+set :deploy_to,       '/home/soundboss/soundboss/'
+set :deploy_via,      :copy
+set :use_sudo,        false
+set :thin_config,     'config/thin.yml'
+set :branch,          'capistrano'
+set :rvm_ruby_string, '1.9.3@soundboss'
 
 set :scm, :git
 # Or: `accurev`, `bzr`, `cvs`, `darcs`, `git`, `mercurial`, `perforce`, `subversion` or `none`
