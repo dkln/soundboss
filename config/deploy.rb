@@ -7,7 +7,7 @@ set :deploy_to,       '/home/soundboss/soundboss/'
 set :deploy_via,      :copy
 set :use_sudo,        false
 set :thin_config,     'config/thin.yml'
-set :branch,          'capistrano'
+set :branch,          'master'
 set :rvm_ruby_string, '1.9.3@soundboss'
 set :rvm_type,        :user
 set :keep_releases,   5
