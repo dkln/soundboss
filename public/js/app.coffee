@@ -17,9 +17,11 @@ class View
     $(event.currentTarget).attr('rel')
 
   highlightSound: (sound) ->
+    L "highlight: #{sound}"
     @findSound(sound).addClass('hover')
 
   dehighlightSound: (sound) ->
+    L "dehighlight: #{sound}"
     @findSound(sound).removeClass('hover')
 
   findSound: (sound) ->
@@ -139,20 +141,20 @@ class App
 
 class Controller
 
+  multiple_audio_files_regexp = /(.*?)__([0-9]+)$/
+
   constructor: (@view) ->
     @soundplayer = new SoundPlayer()
 
   onPlayAudio: (args) ->
-    matches = /(.*)__([0-9]+)$/.exec(args.sound)
-    file_base = file = args.sound
-    if matches && matches.length > 0
-      sound_index = Math.ceil(Math.random()*parseInt(matches[2]))
+    file = file_base = @findFileBase(args.sound)
+    if max_index = @findFileMaxIndex(args.sound)
+      sound_index = Math.ceil(Math.random()*parseInt(max_index))
       L "Index: #{sound_index}"
-      file_base = matches[1]
       file = "#{file_base}#{sound_index}"
     L "Playing #{file_base}"
 
-    @soundplayer.play(file, { reverb: args.reverb, callback: @handleSoundEnd} )
+    @soundplayer.play(file, { reverb: args.reverb, file_base: file_base, callback: @handleSoundEnd} )
 
     @view.highlightSound(file_base)
     @view.setStatus "playing", file_base
@@ -162,8 +164,20 @@ class Controller
     setTimeout((=> @view.revertStatus()), 2500)
 
   handleSoundEnd: (sound) =>
-    @view.dehighlightSound(sound)
+    L "handle sound end: #{sound}"
+    @view.dehighlightSound(@findFileBase(sound))
     @view.revertStatus()
+
+  findFileBase: (sound) ->
+    matches = multiple_audio_files_regexp.exec(sound)
+    if matches
+      matches[1]
+    else
+      sound
+
+  findFileMaxIndex: (sound) ->
+    matches = multiple_audio_files_regexp.exec(sound)
+    matches[2] if matches
 
 class SoundPlayer
   constructor: ->
@@ -183,7 +197,7 @@ class SoundPlayer
       @sample.noteOn(0)
       setTimeout(=>
         @sample.noteOff(0)
-        options.callback(path)
+        options.callback(options.file_base)
       , @sample.buffer.duration * 1000)
     )
 

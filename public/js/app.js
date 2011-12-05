@@ -41,10 +41,12 @@
     };
 
     View.prototype.highlightSound = function(sound) {
+      L("highlight: " + sound);
       return this.findSound(sound).addClass('hover');
     };
 
     View.prototype.dehighlightSound = function(sound) {
+      L("dehighlight: " + sound);
       return this.findSound(sound).removeClass('hover');
     };
 
@@ -230,6 +232,9 @@
   })();
 
   Controller = (function() {
+    var multiple_audio_files_regexp;
+
+    multiple_audio_files_regexp = /(.*?)__([0-9]+)$/;
 
     function Controller(view) {
       this.view = view;
@@ -238,18 +243,17 @@
     }
 
     Controller.prototype.onPlayAudio = function(args) {
-      var file, file_base, matches, sound_index;
-      matches = /(.*)__([0-9]+)$/.exec(args.sound);
-      file_base = file = args.sound;
-      if (matches && matches.length > 0) {
-        sound_index = Math.ceil(Math.random() * parseInt(matches[2]));
+      var file, file_base, max_index, sound_index;
+      file = file_base = this.findFileBase(args.sound);
+      if (max_index = this.findFileMaxIndex(args.sound)) {
+        sound_index = Math.ceil(Math.random() * parseInt(max_index));
         L("Index: " + sound_index);
-        file_base = matches[1];
         file = "" + file_base + sound_index;
       }
       L("Playing " + file_base);
       this.soundplayer.play(file, {
         reverb: args.reverb,
+        file_base: file_base,
         callback: this.handleSoundEnd
       });
       this.view.highlightSound(file_base);
@@ -265,8 +269,25 @@
     };
 
     Controller.prototype.handleSoundEnd = function(sound) {
-      this.view.dehighlightSound(sound);
+      L("handle sound end: " + sound);
+      this.view.dehighlightSound(this.findFileBase(sound));
       return this.view.revertStatus();
+    };
+
+    Controller.prototype.findFileBase = function(sound) {
+      var matches;
+      matches = multiple_audio_files_regexp.exec(sound);
+      if (matches) {
+        return matches[1];
+      } else {
+        return sound;
+      }
+    };
+
+    Controller.prototype.findFileMaxIndex = function(sound) {
+      var matches;
+      matches = multiple_audio_files_regexp.exec(sound);
+      if (matches) return matches[2];
     };
 
     return Controller;
@@ -295,7 +316,7 @@
         _this.sample.noteOn(0);
         return setTimeout(function() {
           _this.sample.noteOff(0);
-          return options.callback(path);
+          return options.callback(options.file_base);
         }, _this.sample.buffer.duration * 1000);
       });
     };
