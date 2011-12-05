@@ -7,6 +7,7 @@ set :deploy_to,   '/home/soundboss/soundboss/'
 set :deploy_via,  :copy
 set :use_sudo,    false
 set :thin_config, 'config/thin.yml'
+set :branch,      'capistrano'
 
 set :scm, :git
 # Or: `accurev`, `bzr`, `cvs`, `darcs`, `git`, `mercurial`, `perforce`, `subversion` or `none`
