@@ -16,12 +16,13 @@ class View
   sound: (event) ->
     $(event.currentTarget).attr('rel')
 
+  versions: (event) ->
+    $(event.currentTarget).attr('data-versions')
+
   highlightSound: (sound) ->
-    L "highlight: #{sound}"
     @findSound(sound).addClass('hover')
 
   dehighlightSound: (sound) ->
-    L "dehighlight: #{sound}"
     @findSound(sound).removeClass('hover')
 
   findSound: (sound) ->
@@ -97,7 +98,8 @@ class App
 
   handleSoundClick: (event) ->
     sound = @view.sound(event)
-    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview}, "reverb": "#{@reverb}" }}""")
+    versions = @view.versions(event) || "false"
+    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview}, "reverb": #{@reverb}, "versions": #{versions} } }""")
 
   handlePreviewClick: (event) ->
     @preview = !@preview
@@ -141,18 +143,16 @@ class App
 
 class Controller
 
-  multiple_audio_files_regexp = /(.*?)__([0-9]+)$/
-
   constructor: (@view) ->
     @soundplayer = new SoundPlayer()
 
   onPlayAudio: (args) ->
-    file = file_base = @findFileBase(args.sound)
-    if max_index = @findFileMaxIndex(args.sound)
-      sound_index = Math.ceil(Math.random()*parseInt(max_index))
-      L "Index: #{sound_index}"
+    file_base = file = args.sound
+    L "Playing '#{file_base}'"
+    if args.versions
+      sound_index = Math.ceil(Math.random() * parseInt(args.versions))
+      L "Version: #{sound_index} / #{args.versions}"
       file = "#{file_base}#{sound_index}"
-    L "Playing #{file_base}"
 
     @soundplayer.play(file, { reverb: args.reverb, file_base: file_base, callback: @handleSoundEnd} )
 
@@ -164,20 +164,8 @@ class Controller
     setTimeout((=> @view.revertStatus()), 2500)
 
   handleSoundEnd: (sound) =>
-    L "handle sound end: #{sound}"
-    @view.dehighlightSound(@findFileBase(sound))
+    @view.dehighlightSound(sound)
     @view.revertStatus()
-
-  findFileBase: (sound) ->
-    matches = multiple_audio_files_regexp.exec(sound)
-    if matches
-      matches[1]
-    else
-      sound
-
-  findFileMaxIndex: (sound) ->
-    matches = multiple_audio_files_regexp.exec(sound)
-    matches[2] if matches
 
 class SoundPlayer
   constructor: ->
@@ -191,7 +179,7 @@ class SoundPlayer
   play: (path, options) ->
     @sample = @context.createBufferSource()
     @sample.connect(@context.destination)
-    @sample.connect(@reverb) if options.reverb == "true"
+    @sample.connect(@reverb) if options.reverb == true
     @load("/audio/#{path}.ogg", (response) =>
       @sample.buffer = @context.createBuffer(response, false)
       @sample.noteOn(0)

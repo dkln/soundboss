@@ -37,9 +37,20 @@ To convert a sound to both `.ogg` and `.mp3`, run:
 
     ./script/convert /path/to/sound.wav
 
+To add multiple versions of a sample, add a numberic suffix to the filenmes
+(e.g. `jobs1.ogg`, `jobs2.ogg`, etc.), and add a `data-versions` attribute to
+the HTML entry:
+
+``` html
+<li rel='jobs' data-version='11'>THEY TOOK'R JUBS</li>
+```
+
+A random sound will be played for every listener.
+
 ### Audio tools
 
 Some tools to use:
 
 * [Audacity](http://audacity.sourceforge.net/download/) (free audio editor)
 * [YouTube mp3](http://youtube-mp3.org) (to download the audio of YouTube movies)
+

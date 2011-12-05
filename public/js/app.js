@@ -40,13 +40,15 @@
       return $(event.currentTarget).attr('rel');
     };
 
+    View.prototype.versions = function(event) {
+      return $(event.currentTarget).attr('data-versions');
+    };
+
     View.prototype.highlightSound = function(sound) {
-      L("highlight: " + sound);
       return this.findSound(sound).addClass('hover');
     };
 
     View.prototype.dehighlightSound = function(sound) {
-      L("dehighlight: " + sound);
       return this.findSound(sound).removeClass('hover');
     };
 
@@ -169,9 +171,10 @@
     };
 
     App.prototype.handleSoundClick = function(event) {
-      var sound;
+      var sound, versions;
       sound = this.view.sound(event);
-      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + ", \"reverb\": \"" + this.reverb + "\" }}");
+      versions = this.view.versions(event) || "false";
+      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + ", \"reverb\": " + this.reverb + ", \"versions\": " + versions + " } }");
     };
 
     App.prototype.handlePreviewClick = function(event) {
@@ -232,9 +235,6 @@
   })();
 
   Controller = (function() {
-    var multiple_audio_files_regexp;
-
-    multiple_audio_files_regexp = /(.*?)__([0-9]+)$/;
 
     function Controller(view) {
       this.view = view;
@@ -243,14 +243,14 @@
     }
 
     Controller.prototype.onPlayAudio = function(args) {
-      var file, file_base, max_index, sound_index;
-      file = file_base = this.findFileBase(args.sound);
-      if (max_index = this.findFileMaxIndex(args.sound)) {
-        sound_index = Math.ceil(Math.random() * parseInt(max_index));
-        L("Index: " + sound_index);
+      var file, file_base, sound_index;
+      file_base = file = args.sound;
+      L("Playing '" + file_base + "'");
+      if (args.versions) {
+        sound_index = Math.ceil(Math.random() * parseInt(args.versions));
+        L("Version: " + sound_index + " / " + args.versions);
         file = "" + file_base + sound_index;
       }
-      L("Playing " + file_base);
       this.soundplayer.play(file, {
         reverb: args.reverb,
         file_base: file_base,
@@ -269,25 +269,8 @@
     };
 
     Controller.prototype.handleSoundEnd = function(sound) {
-      L("handle sound end: " + sound);
-      this.view.dehighlightSound(this.findFileBase(sound));
+      this.view.dehighlightSound(sound);
       return this.view.revertStatus();
-    };
-
-    Controller.prototype.findFileBase = function(sound) {
-      var matches;
-      matches = multiple_audio_files_regexp.exec(sound);
-      if (matches) {
-        return matches[1];
-      } else {
-        return sound;
-      }
-    };
-
-    Controller.prototype.findFileMaxIndex = function(sound) {
-      var matches;
-      matches = multiple_audio_files_regexp.exec(sound);
-      if (matches) return matches[2];
     };
 
     return Controller;
@@ -310,7 +293,7 @@
       var _this = this;
       this.sample = this.context.createBufferSource();
       this.sample.connect(this.context.destination);
-      if (options.reverb === "true") this.sample.connect(this.reverb);
+      if (options.reverb === true) this.sample.connect(this.reverb);
       return this.load("/audio/" + path + ".ogg", function(response) {
         _this.sample.buffer = _this.context.createBuffer(response, false);
         _this.sample.noteOn(0);
