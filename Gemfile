@@ -7,5 +7,8 @@ gem 'em-websocket'
 gem 'json'
 
 group :development do
+  gem 'capistrano-ext'
+  gem 'capistrano_colors'
+  gem 'capistrano'
   gem 'guard-coffeescript'
 end
