@@ -1,0 +1,60 @@
+#!/bin/bash
+set -e
+
+display-help() {
+  echo ""
+  echo "This script will convert wav files to mp3 and ogg and add them to soundboss."
+  echo ""
+  echo "    $0 /path/to/sound.wav"
+  echo ""
+}
+
+if [ "$1" == "" ]; then
+  echo "No file given!"
+  display-help
+  exit 1
+fi
+
+if [ ! -f $1 ]; then
+  echo "Not a file: $1"
+  display-help
+  exit 1
+fi
+
+
+name=`basename $1 .wav | tr '[A-Z]' '[a-z]'`
+if [ "$name" == "$1" ]; then
+  echo "Not a .wav file!"
+  display-help
+  exit 1
+fi
+
+install() {
+  if which brew > /dev/null; then
+    echo "Installing $1"
+    brew install $1
+  else
+    echo "Please install $1 to convert a wav"
+    exit 1
+  fi
+}
+
+if which lame > /dev/null; then
+  echo "Lame converter found"
+else
+  install "lame"
+fi
+
+if which oggenc > /dev/null; then
+  echo "OGG encoder found"
+else
+  install "vorbis-tools"
+fi
+
+dir=`cd $(dirname $0)/../public/audio; pwd`
+
+lame -S $1 $dir/$name.mp3
+echo "--> Saved $dir/$name.mp3"
+
+oggenc -Q $1 -o $dir/$name.ogg
+echo "--> Saved $dir/$name.ogg"
