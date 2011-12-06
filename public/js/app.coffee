@@ -7,6 +7,7 @@ class View
     disconnected: -> "<span>DISCONNECTED!</span>"
     playing: (sound) -> "PLAYING SOUND <span>#{sound}</span>"
     playingTo: (listeners) -> "PLAYING TO <span>#{listeners}</span> #{if listeners is 1 then "PERSON" else "PEOPLE"}"
+    playingButMute: (sound) -> "MUTED, <span>#{sound}</span> IS PLAYING THOUGH"
     error: (message) -> "ERROR: <span>#{message}</span>"
     connections: (amount) -> "CONNECTIONS: <span>#{amount}</span>"
 
@@ -67,6 +68,18 @@ class View
   disableReverb: ->
     @reverbCheckbox().html(' ')
 
+  mute: ->
+    @__mute ?= $('#mute')
+
+  muteCheckbox: ->
+    @__muteCheckbox ?= @mute().find('.checkbox')
+
+  enableMute: ->
+    @muteCheckbox().html('X')
+
+  disableMute: ->
+    @muteCheckbox().html(' ')
+
 class App
 
   constructor: (@view) ->
@@ -75,6 +88,7 @@ class App
     @initSounds()
     @initPreview()
     @initReverb()
+    @initMute()
 
   initSounds: ->
     @view.sounds().click => @handleSoundClick(event)
@@ -88,6 +102,12 @@ class App
     @view.reverb().click => @handleReverbClick(event)
     @reverb = false
     @renderReverbState()
+
+  initMute: ->
+    @view.mute().click => @handleMuteClick(event)
+    @view.muted = false
+    @mute = false
+    @renderMuteState()
 
   connect: ->
     L 'starting connection'
@@ -122,6 +142,17 @@ class App
     else
       @view.disableReverb()
 
+  handleMuteClick: (event) ->
+    @mute = !@mute
+    @view.muted = @mute
+    @renderMuteState()
+
+  renderMuteState: ->
+    if @mute
+      @view.enableMute()
+    else
+      @view.disableMute()
+
   onSocketMessage: (data) ->
     L 'onSocketMessage'
     message = $.parseJSON(data.data)
@@ -149,16 +180,21 @@ class Controller
 
   onPlayAudio: (args) ->
     file_base = file = args.sound
-    L "Playing '#{file_base}'"
-    if args.versions
-      sound_index = Math.ceil(Math.random() * parseInt(args.versions))
-      L "Version: #{sound_index} / #{args.versions}"
-      file = "#{file_base}#{sound_index}"
 
-    @soundplayer.play(file, { reverb: args.reverb, file_base: file_base, callback: @handleSoundEnd} )
+    if @view.muted
+      @view.setStatus "playingButMute", file_base
+      setTimeout((=> @view.revertStatus()), 2000)
+    else
+      L "Playing '#{file_base}'"
+      if args.versions
+        sound_index = Math.ceil(Math.random() * parseInt(args.versions))
+        L "Version: #{sound_index} / #{args.versions}"
+        file = "#{file_base}#{sound_index}"
 
-    @view.highlightSound(file_base)
-    @view.setStatus "playing", file_base
+      @soundplayer.play(file, { reverb: args.reverb, file_base: file_base, callback: @handleSoundEnd} )
+
+      @view.highlightSound(file_base)
+      @view.setStatus "playing", file_base
 
   onConnectionChange: (args) ->
     @view.setStatus "connections", args.listeners

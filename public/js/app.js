@@ -24,6 +24,9 @@
       playingTo: function(listeners) {
         return "PLAYING TO <span>" + listeners + "</span> " + (listeners === 1 ? "PERSON" : "PEOPLE");
       },
+      playingButMute: function(sound) {
+        return "MUTED, <span>" + sound + "</span> IS PLAYING THOUGH";
+      },
       error: function(message) {
         return "ERROR: <span>" + message + "</span>";
       },
@@ -115,6 +118,24 @@
       return this.reverbCheckbox().html(' ');
     };
 
+    View.prototype.mute = function() {
+      var _ref;
+      return (_ref = this.__mute) != null ? _ref : this.__mute = $('#mute');
+    };
+
+    View.prototype.muteCheckbox = function() {
+      var _ref;
+      return (_ref = this.__muteCheckbox) != null ? _ref : this.__muteCheckbox = this.mute().find('.checkbox');
+    };
+
+    View.prototype.enableMute = function() {
+      return this.muteCheckbox().html('X');
+    };
+
+    View.prototype.disableMute = function() {
+      return this.muteCheckbox().html(' ');
+    };
+
     return View;
 
   })();
@@ -128,6 +149,7 @@
       this.initSounds();
       this.initPreview();
       this.initReverb();
+      this.initMute();
     }
 
     App.prototype.initSounds = function() {
@@ -153,6 +175,16 @@
       });
       this.reverb = false;
       return this.renderReverbState();
+    };
+
+    App.prototype.initMute = function() {
+      var _this = this;
+      this.view.mute().click(function() {
+        return _this.handleMuteClick(event);
+      });
+      this.view.muted = false;
+      this.mute = false;
+      return this.renderMuteState();
     };
 
     App.prototype.connect = function() {
@@ -206,6 +238,20 @@
       }
     };
 
+    App.prototype.handleMuteClick = function(event) {
+      this.mute = !this.mute;
+      this.view.muted = this.mute;
+      return this.renderMuteState();
+    };
+
+    App.prototype.renderMuteState = function() {
+      if (this.mute) {
+        return this.view.enableMute();
+      } else {
+        return this.view.disableMute();
+      }
+    };
+
     App.prototype.onSocketMessage = function(data) {
       var message, method;
       L('onSocketMessage');
@@ -247,20 +293,28 @@
 
     Controller.prototype.onPlayAudio = function(args) {
       var file, file_base, sound_index;
+      var _this = this;
       file_base = file = args.sound;
-      L("Playing '" + file_base + "'");
-      if (args.versions) {
-        sound_index = Math.ceil(Math.random() * parseInt(args.versions));
-        L("Version: " + sound_index + " / " + args.versions);
-        file = "" + file_base + sound_index;
+      if (this.view.muted) {
+        this.view.setStatus("playingButMute", file_base);
+        return setTimeout((function() {
+          return _this.view.revertStatus();
+        }), 2000);
+      } else {
+        L("Playing '" + file_base + "'");
+        if (args.versions) {
+          sound_index = Math.ceil(Math.random() * parseInt(args.versions));
+          L("Version: " + sound_index + " / " + args.versions);
+          file = "" + file_base + sound_index;
+        }
+        this.soundplayer.play(file, {
+          reverb: args.reverb,
+          file_base: file_base,
+          callback: this.handleSoundEnd
+        });
+        this.view.highlightSound(file_base);
+        return this.view.setStatus("playing", file_base);
       }
-      this.soundplayer.play(file, {
-        reverb: args.reverb,
-        file_base: file_base,
-        callback: this.handleSoundEnd
-      });
-      this.view.highlightSound(file_base);
-      return this.view.setStatus("playing", file_base);
     };
 
     Controller.prototype.onConnectionChange = function(args) {
