@@ -180,6 +180,7 @@ class SoundPlayer
 
   constructor: ->
     @context = new webkitAudioContext()
+    @samples = {}
 
     @reverb = @context.createConvolver()
     @reverb.connect(@context.destination)
@@ -187,17 +188,21 @@ class SoundPlayer
       @reverb.buffer = @context.createBuffer(response, false))
 
   play: (path, options) ->
-    @sample = @context.createBufferSource()
-    @sample.connect(@context.destination)
-    @sample.connect(@reverb) if options.reverb == true
+    sample = @context.createBufferSource()
+    sample.connect(@context.destination)
+    sample.connect(@reverb) if options.reverb == true
+    id = @context.currentTime
+    @samples[id] = sample
     @load("/audio/#{path}.ogg", (response) =>
-      @sample.buffer = @context.createBuffer(response, false)
-      @sample.noteOn(0)
+      @samples[id].buffer = @context.createBuffer(response, false)
+      @samples[id].noteOn(0)
       setTimeout(=>
-        @sample.noteOff(0)
+        @samples[id].noteOff(0)
+        @samples[id] = null
         options.callback(options.file_base)
-      , @sample.buffer.duration * 1000)
+      , @samples[id].buffer.duration * 1000)
     )
+
 
   load: (path, callback) ->
     request = new XMLHttpRequest()

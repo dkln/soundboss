@@ -294,6 +294,7 @@
     function SoundPlayer() {
       var _this = this;
       this.context = new webkitAudioContext();
+      this.samples = {};
       this.reverb = this.context.createConvolver();
       this.reverb.connect(this.context.destination);
       this.load("/audio/reverb.wav", function(response) {
@@ -302,17 +303,21 @@
     }
 
     SoundPlayer.prototype.play = function(path, options) {
+      var id, sample;
       var _this = this;
-      this.sample = this.context.createBufferSource();
-      this.sample.connect(this.context.destination);
-      if (options.reverb === true) this.sample.connect(this.reverb);
+      sample = this.context.createBufferSource();
+      sample.connect(this.context.destination);
+      if (options.reverb === true) sample.connect(this.reverb);
+      id = this.context.currentTime;
+      this.samples[id] = sample;
       return this.load("/audio/" + path + ".ogg", function(response) {
-        _this.sample.buffer = _this.context.createBuffer(response, false);
-        _this.sample.noteOn(0);
+        _this.samples[id].buffer = _this.context.createBuffer(response, false);
+        _this.samples[id].noteOn(0);
         return setTimeout(function() {
-          _this.sample.noteOff(0);
+          _this.samples[id].noteOff(0);
+          _this.samples[id] = null;
           return options.callback(options.file_base);
-        }, _this.sample.buffer.duration * 1000);
+        }, _this.samples[id].buffer.duration * 1000);
       });
     };
 
