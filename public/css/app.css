@@ -119,10 +119,8 @@ div.option {
   font-size: 32px;
   color: #fff;
   text-align: right;
-  right: 0;
-  bottom: 0;
-  position: fixed;
   cursor: pointer;
+  display: inline;
 }
   div.option span {
     color: #33f;
@@ -132,10 +130,6 @@ div.option {
     margin: 0 3px;
     color: #0f0;
   }
-
-div#reverb {
-  right: 420px;
-}
 
 #overlay {
   background: #000;
