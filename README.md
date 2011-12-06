@@ -4,7 +4,7 @@ A distributed soundboard, using websockets!
 
 Anyone with this webpage open will be able to spam others by playing short sound clips.
 
-![screenshot](https://github.com/dkln/soundboss/raw/master/screenshot.jpg)
+![screenshot](https://github.com/dkln/soundboss/raw/master/screenshot.png)
 
 ## Getting started
 
