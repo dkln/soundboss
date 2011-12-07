@@ -3,7 +3,7 @@ set :repository,      "https://github.com/dkln/soundboss.git"
 set :main_server,     "fixalist.nl"
 set :user,            "soundboss"
 set :deploy_to,       '/home/soundboss/soundboss/'
-set :deploy_via,      :copy
+set :deploy_via,      :remote_cache
 set :use_sudo,        false
 set :thin_config,     'config/thin.yml'
 set :branch,          'master'
