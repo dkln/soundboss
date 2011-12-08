@@ -1,4 +1,7 @@
-L = -> console.log(arguments...)
+L = (text) ->
+  console.log(text) if console? && console.log?
+
+WebSocket ?= MozWebSocket if MozWebSocket?
 
 class View
 
@@ -16,10 +19,10 @@ class View
     $('#status').html(message)
 
   sound: (event) ->
-    $(event.currentTarget).attr('data-file')
+    $(event.target).attr('data-file')
 
   versions: (event) ->
-    $(event.currentTarget).attr('data-versions')
+    $(event.target).attr('data-versions')
 
   highlightSound: (sound) ->
     @findSound(sound).addClass('hover')
@@ -56,18 +59,6 @@ class View
   disablePreview: ->
     @previewCheckbox().html(' ')
 
-  reverb: ->
-    @__reverb ?= $('#reverb')
-
-  reverbCheckbox: ->
-    @__reverbCheckbox ?= @reverb().find('.checkbox')
-
-  enableReverb: ->
-    @reverbCheckbox().html('X')
-
-  disableReverb: ->
-    @reverbCheckbox().html(' ')
-
   mute: ->
     @__mute ?= $('#mute')
 
@@ -87,24 +78,18 @@ class App
     @connect()
     @initSounds()
     @initPreview()
-    @initReverb()
     @initMute()
 
   initSounds: ->
-    @view.sounds().click => @handleSoundClick(event)
+    @view.sounds().click (event) => @handleSoundClick(event)
 
   initPreview: ->
-    @view.preview().click => @handlePreviewClick(event)
+    @view.preview().click (event) => @handlePreviewClick(event)
     @preview = false
     @renderPreviewState()
 
-  initReverb: ->
-    @view.reverb().click => @handleReverbClick(event)
-    @reverb = false
-    @renderReverbState()
-
   initMute: ->
-    @view.mute().click => @handleMuteClick(event)
+    @view.mute().click (event) => @handleMuteClick(event)
     @view.muted = false
     @mute = false
     @renderMuteState()
@@ -120,7 +105,7 @@ class App
   handleSoundClick: (event) ->
     sound = @view.sound(event)
     versions = @view.versions(event) || "false"
-    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview}, "reverb": #{@reverb}, "versions": #{versions} } }""")
+    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview}, "versions": #{versions} } }""")
 
   handlePreviewClick: (event) ->
     @preview = !@preview
@@ -131,16 +116,6 @@ class App
       @view.enablePreview()
     else
       @view.disablePreview()
-
-  handleReverbClick: (event) ->
-    @reverb = !@reverb
-    @renderReverbState()
-
-  renderReverbState: ->
-    if @reverb
-      @view.enableReverb()
-    else
-      @view.disableReverb()
 
   handleMuteClick: (event) ->
     @mute = !@mute
@@ -176,7 +151,6 @@ class App
 class Controller
 
   constructor: (@view) ->
-    @soundplayer = new SoundPlayer()
 
   onPlayAudio: (args) ->
     file_base = file = args.sound
@@ -191,7 +165,9 @@ class Controller
         L "Version: #{sound_index} / #{args.versions}"
         file = "#{file_base}#{sound_index}"
 
-      @soundplayer.play(file, { reverb: args.reverb, file_base: file_base, callback: @handleSoundEnd} )
+      mySound = new buzz.sound( "/audio/#{file}", { formats: [ "ogg", "mp3" ] } )
+      mySound.bind("ended", => @handleSoundEnd(file_base))
+      mySound.play()
 
       @view.highlightSound(file_base)
       @view.setStatus "playing", file_base
@@ -210,43 +186,6 @@ class Controller
 
   timeoutStatus: ->
     setTimeout((=> @view.revertStatus()), 2500)
-
-
-class SoundPlayer
-
-  constructor: ->
-    @context = new webkitAudioContext()
-    @samples = {}
-
-    @reverb = @context.createConvolver()
-    @reverb.connect(@context.destination)
-    @load("/audio/reverb.wav", (response) =>
-      @reverb.buffer = @context.createBuffer(response, false))
-
-  play: (path, options) ->
-    sample = @context.createBufferSource()
-    sample.connect(@context.destination)
-    sample.connect(@reverb) if options.reverb == true
-    id = @context.currentTime
-    @samples[id] = sample
-    @load("/audio/#{path}.ogg", (response) =>
-      @samples[id].buffer = @context.createBuffer(response, false)
-      @samples[id].noteOn(0)
-      setTimeout(=>
-        @samples[id].noteOff(0)
-        @samples[id] = null
-        options.callback(options.file_base)
-      , @samples[id].buffer.duration * 1000)
-    )
-
-
-  load: (path, callback) ->
-    request = new XMLHttpRequest()
-    request.open("GET", path, true)
-    request.responseType = "arraybuffer"
-    request.onload = ->
-      callback(request.response)
-    request.send()
 
 
 jQuery ->

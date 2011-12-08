@@ -1,10 +1,18 @@
 (function() {
-  var App, Controller, L, SoundPlayer, View;
+  var App, Controller, L, View;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-  L = function() {
-    return console.log.apply(console, arguments);
+  L = function(text) {
+    if ((typeof console !== "undefined" && console !== null) && (console.log != null)) {
+      return console.log(text);
+    }
   };
+
+  if (typeof MozWebSocket !== "undefined" && MozWebSocket !== null) {
+    if (typeof WebSocket === "undefined" || WebSocket === null) {
+      WebSocket = MozWebSocket;
+    }
+  }
 
   View = (function() {
     var messages;
@@ -43,11 +51,11 @@
     };
 
     View.prototype.sound = function(event) {
-      return $(event.currentTarget).attr('data-file');
+      return $(event.target).attr('data-file');
     };
 
     View.prototype.versions = function(event) {
-      return $(event.currentTarget).attr('data-versions');
+      return $(event.target).attr('data-versions');
     };
 
     View.prototype.highlightSound = function(sound) {
@@ -100,24 +108,6 @@
       return this.previewCheckbox().html(' ');
     };
 
-    View.prototype.reverb = function() {
-      var _ref;
-      return (_ref = this.__reverb) != null ? _ref : this.__reverb = $('#reverb');
-    };
-
-    View.prototype.reverbCheckbox = function() {
-      var _ref;
-      return (_ref = this.__reverbCheckbox) != null ? _ref : this.__reverbCheckbox = this.reverb().find('.checkbox');
-    };
-
-    View.prototype.enableReverb = function() {
-      return this.reverbCheckbox().html('X');
-    };
-
-    View.prototype.disableReverb = function() {
-      return this.reverbCheckbox().html(' ');
-    };
-
     View.prototype.mute = function() {
       var _ref;
       return (_ref = this.__mute) != null ? _ref : this.__mute = $('#mute');
@@ -148,38 +138,28 @@
       this.connect();
       this.initSounds();
       this.initPreview();
-      this.initReverb();
       this.initMute();
     }
 
     App.prototype.initSounds = function() {
       var _this = this;
-      return this.view.sounds().click(function() {
+      return this.view.sounds().click(function(event) {
         return _this.handleSoundClick(event);
       });
     };
 
     App.prototype.initPreview = function() {
       var _this = this;
-      this.view.preview().click(function() {
+      this.view.preview().click(function(event) {
         return _this.handlePreviewClick(event);
       });
       this.preview = false;
       return this.renderPreviewState();
     };
 
-    App.prototype.initReverb = function() {
-      var _this = this;
-      this.view.reverb().click(function() {
-        return _this.handleReverbClick(event);
-      });
-      this.reverb = false;
-      return this.renderReverbState();
-    };
-
     App.prototype.initMute = function() {
       var _this = this;
-      this.view.mute().click(function() {
+      this.view.mute().click(function(event) {
         return _this.handleMuteClick(event);
       });
       this.view.muted = false;
@@ -209,7 +189,7 @@
       var sound, versions;
       sound = this.view.sound(event);
       versions = this.view.versions(event) || "false";
-      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + ", \"reverb\": " + this.reverb + ", \"versions\": " + versions + " } }");
+      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + ", \"versions\": " + versions + " } }");
     };
 
     App.prototype.handlePreviewClick = function(event) {
@@ -222,19 +202,6 @@
         return this.view.enablePreview();
       } else {
         return this.view.disablePreview();
-      }
-    };
-
-    App.prototype.handleReverbClick = function(event) {
-      this.reverb = !this.reverb;
-      return this.renderReverbState();
-    };
-
-    App.prototype.renderReverbState = function() {
-      if (this.reverb) {
-        return this.view.enableReverb();
-      } else {
-        return this.view.disableReverb();
       }
     };
 
@@ -288,11 +255,10 @@
     function Controller(view) {
       this.view = view;
       this.handleSoundEnd = __bind(this.handleSoundEnd, this);
-      this.soundplayer = new SoundPlayer();
     }
 
     Controller.prototype.onPlayAudio = function(args) {
-      var file, file_base, sound_index;
+      var file, file_base, mySound, sound_index;
       var _this = this;
       file_base = file = args.sound;
       if (this.view.muted) {
@@ -307,11 +273,13 @@
           L("Version: " + sound_index + " / " + args.versions);
           file = "" + file_base + sound_index;
         }
-        this.soundplayer.play(file, {
-          reverb: args.reverb,
-          file_base: file_base,
-          callback: this.handleSoundEnd
+        mySound = new buzz.sound("/audio/" + file, {
+          formats: ["ogg", "mp3"]
         });
+        mySound.bind("ended", function() {
+          return _this.handleSoundEnd(file_base);
+        });
+        mySound.play();
         this.view.highlightSound(file_base);
         return this.view.setStatus("playing", file_base);
       }
@@ -340,53 +308,6 @@
     };
 
     return Controller;
-
-  })();
-
-  SoundPlayer = (function() {
-
-    function SoundPlayer() {
-      var _this = this;
-      this.context = new webkitAudioContext();
-      this.samples = {};
-      this.reverb = this.context.createConvolver();
-      this.reverb.connect(this.context.destination);
-      this.load("/audio/reverb.wav", function(response) {
-        return _this.reverb.buffer = _this.context.createBuffer(response, false);
-      });
-    }
-
-    SoundPlayer.prototype.play = function(path, options) {
-      var id, sample;
-      var _this = this;
-      sample = this.context.createBufferSource();
-      sample.connect(this.context.destination);
-      if (options.reverb === true) sample.connect(this.reverb);
-      id = this.context.currentTime;
-      this.samples[id] = sample;
-      return this.load("/audio/" + path + ".ogg", function(response) {
-        _this.samples[id].buffer = _this.context.createBuffer(response, false);
-        _this.samples[id].noteOn(0);
-        return setTimeout(function() {
-          _this.samples[id].noteOff(0);
-          _this.samples[id] = null;
-          return options.callback(options.file_base);
-        }, _this.samples[id].buffer.duration * 1000);
-      });
-    };
-
-    SoundPlayer.prototype.load = function(path, callback) {
-      var request;
-      request = new XMLHttpRequest();
-      request.open("GET", path, true);
-      request.responseType = "arraybuffer";
-      request.onload = function() {
-        return callback(request.response);
-      };
-      return request.send();
-    };
-
-    return SoundPlayer;
 
   })();
 
