@@ -9,24 +9,12 @@ class Messenger
   end
 
   def perform
-    if preview?
-      listen
-    else
-      spam
-      spam_satisfaction
-    end
+    spam
+    spam_satisfaction
   end
 
   def hash
     @hash ||= JSON.parse(@message)
-  end
-
-  def preview?
-    hash.fetch("args"){{}}["preview"]
-  end
-
-  def listen
-    @sender.send(@message)
   end
 
   def spam

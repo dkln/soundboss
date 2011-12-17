@@ -1,5 +1,5 @@
 (function() {
-  var App, Controller, L, View;
+  var App, Controller, L, Sound, View;
   var __slice = Array.prototype.slice, __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   L = function(text) {
@@ -31,9 +31,6 @@
       },
       playingTo: function(listeners) {
         return "PLAYING TO <span>" + listeners + "</span> " + (listeners === 1 ? "PERSON" : "PEOPLE");
-      },
-      playingButMute: function(sound) {
-        return "MUTED, <span>" + sound + "</span> IS PLAYING THOUGH";
       },
       error: function(message) {
         return "ERROR: <span>" + message + "</span>";
@@ -90,40 +87,22 @@
       return (_ref = this.__overlay) != null ? _ref : this.__overlay = $('#overlay');
     };
 
-    View.prototype.preview = function() {
+    View.prototype.private = function() {
       var _ref;
-      return (_ref = this.__preview) != null ? _ref : this.__preview = $('#preview');
+      return (_ref = this.__private) != null ? _ref : this.__private = $('#private');
     };
 
-    View.prototype.previewCheckbox = function() {
+    View.prototype.privateCheckbox = function() {
       var _ref;
-      return (_ref = this.__previewCheckbox) != null ? _ref : this.__previewCheckbox = this.preview().find('.checkbox');
+      return (_ref = this.__privateCheckbox) != null ? _ref : this.__privateCheckbox = this.private().find('.checkbox');
     };
 
-    View.prototype.enablePreview = function() {
-      return this.previewCheckbox().html('X');
+    View.prototype.enablePrivate = function() {
+      return this.privateCheckbox().html('X');
     };
 
-    View.prototype.disablePreview = function() {
-      return this.previewCheckbox().html(' ');
-    };
-
-    View.prototype.mute = function() {
-      var _ref;
-      return (_ref = this.__mute) != null ? _ref : this.__mute = $('#mute');
-    };
-
-    View.prototype.muteCheckbox = function() {
-      var _ref;
-      return (_ref = this.__muteCheckbox) != null ? _ref : this.__muteCheckbox = this.mute().find('.checkbox');
-    };
-
-    View.prototype.enableMute = function() {
-      return this.muteCheckbox().html('X');
-    };
-
-    View.prototype.disableMute = function() {
-      return this.muteCheckbox().html(' ');
+    View.prototype.disablePrivate = function() {
+      return this.privateCheckbox().html(' ');
     };
 
     return View;
@@ -137,8 +116,7 @@
       this.controller = new Controller(this.view);
       this.connect();
       this.initSounds();
-      this.initPreview();
-      this.initMute();
+      this.initPrivate();
     }
 
     App.prototype.initSounds = function() {
@@ -148,23 +126,13 @@
       });
     };
 
-    App.prototype.initPreview = function() {
+    App.prototype.initPrivate = function() {
       var _this = this;
-      this.view.preview().click(function(event) {
-        return _this.handlePreviewClick(event);
+      this.view.private().click(function(event) {
+        return _this.handlePrivateClick(event);
       });
-      this.preview = false;
-      return this.renderPreviewState();
-    };
-
-    App.prototype.initMute = function() {
-      var _this = this;
-      this.view.mute().click(function(event) {
-        return _this.handleMuteClick(event);
-      });
-      this.view.muted = false;
-      this.mute = false;
-      return this.renderMuteState();
+      this.private = false;
+      return this.renderPrivateState();
     };
 
     App.prototype.connect = function() {
@@ -188,34 +156,28 @@
     App.prototype.handleSoundClick = function(event) {
       var sound, versions;
       sound = this.view.sound(event);
-      versions = this.view.versions(event) || "false";
-      return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"preview\": " + this.preview + ", \"versions\": " + versions + " } }");
-    };
-
-    App.prototype.handlePreviewClick = function(event) {
-      this.preview = !this.preview;
-      return this.renderPreviewState();
-    };
-
-    App.prototype.renderPreviewState = function() {
-      if (this.preview) {
-        return this.view.enablePreview();
+      versions = this.view.versions(event) || false;
+      if (this.private) {
+        return this.controller.onPlayAudio({
+          sound: sound,
+          versions: versions
+        });
       } else {
-        return this.view.disablePreview();
+        return this.socket.send("{ \"action\": \"playAudio\", \"args\": { \"sound\": \"" + sound + "\", \"versions\": " + versions + " } }");
       }
     };
 
-    App.prototype.handleMuteClick = function(event) {
-      this.mute = !this.mute;
-      this.view.muted = this.mute;
-      return this.renderMuteState();
+    App.prototype.handlePrivateClick = function(event) {
+      this.private = !this.private;
+      this.controller.stopAllSounds();
+      return this.renderPrivateState();
     };
 
-    App.prototype.renderMuteState = function() {
-      if (this.mute) {
-        return this.view.enableMute();
+    App.prototype.renderPrivateState = function() {
+      if (this.private) {
+        return this.view.enablePrivate();
       } else {
-        return this.view.disableMute();
+        return this.view.disablePrivate();
       }
     };
 
@@ -255,34 +217,32 @@
     function Controller(view) {
       this.view = view;
       this.handleSoundEnd = __bind(this.handleSoundEnd, this);
+      this.soundsPlaying = [];
     }
 
-    Controller.prototype.onPlayAudio = function(args) {
-      var file, file_base, mySound, sound_index;
-      var _this = this;
-      file_base = file = args.sound;
-      if (this.view.muted) {
-        this.view.setStatus("playingButMute", file_base);
-        return setTimeout((function() {
-          return _this.view.revertStatus();
-        }), 2000);
-      } else {
-        L("Playing '" + file_base + "'");
-        if (args.versions) {
-          sound_index = Math.ceil(Math.random() * parseInt(args.versions));
-          L("Version: " + sound_index + " / " + args.versions);
-          file = "" + file_base + sound_index;
-        }
-        mySound = new buzz.sound("/audio/" + file, {
-          formats: ["ogg", "mp3"]
-        });
-        mySound.bind("ended", function() {
-          return _this.handleSoundEnd(file_base);
-        });
-        mySound.play();
-        this.view.highlightSound(file_base);
-        return this.view.setStatus("playing", file_base);
+    Controller.prototype.stopAllSounds = function() {
+      var sound, _i, _len, _ref, _results;
+      _ref = this.soundsPlaying;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        sound = _ref[_i];
+        sound.stop();
+        _results.push(this.handleSoundEnd(sound));
       }
+      return _results;
+    };
+
+    Controller.prototype.onPlayAudio = function(args) {
+      var sound;
+      var _this = this;
+      sound = new Sound(args.sound, args.versions);
+      this.soundsPlaying.push(sound);
+      sound.bindEnd(function() {
+        return _this.handleSoundEnd(sound);
+      });
+      sound.play();
+      this.view.highlightSound(sound.name);
+      return this.view.setStatus("playing", sound.name);
     };
 
     Controller.prototype.onConnectionChange = function(args) {
@@ -296,7 +256,8 @@
     };
 
     Controller.prototype.handleSoundEnd = function(sound) {
-      this.view.dehighlightSound(sound);
+      delete this.soundsPlaying[sound];
+      this.view.dehighlightSound(sound.name);
       return this.view.revertStatus();
     };
 
@@ -308,6 +269,43 @@
     };
 
     return Controller;
+
+  })();
+
+  Sound = (function() {
+
+    function Sound(name, versions) {
+      this.name = name;
+      this.versions = versions;
+      this.buzz = new buzz.sound("/audio/" + (this.file()), {
+        formats: ["ogg", "mp3"]
+      });
+    }
+
+    Sound.prototype.file = function() {
+      var sound_index;
+      if (this.versions) {
+        sound_index = Math.ceil(Math.random() * parseInt(this.versions));
+        L("Version: " + sound_index + " / " + this.versions);
+        return "" + this.name + sound_index;
+      } else {
+        return this.name;
+      }
+    };
+
+    Sound.prototype.bindEnd = function(callback) {
+      return this.buzz.bind("ended", callback);
+    };
+
+    Sound.prototype.play = function() {
+      return this.buzz.play();
+    };
+
+    Sound.prototype.stop = function() {
+      return this.buzz.stop();
+    };
+
+    return Sound;
 
   })();
 

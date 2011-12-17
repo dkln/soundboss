@@ -10,7 +10,6 @@ class View
     disconnected: -> "<span>DISCONNECTED!</span>"
     playing: (sound) -> "PLAYING SOUND <span>#{sound}</span>"
     playingTo: (listeners) -> "PLAYING TO <span>#{listeners}</span> #{if listeners is 1 then "PERSON" else "PEOPLE"}"
-    playingButMute: (sound) -> "MUTED, <span>#{sound}</span> IS PLAYING THOUGH"
     error: (message) -> "ERROR: <span>#{message}</span>"
     connections: (amount) -> "CONNECTIONS: <span>#{amount}</span>"
 
@@ -47,29 +46,18 @@ class View
   overlay: ->
     @__overlay ?= $('#overlay')
 
-  preview: ->
-    @__preview ?= $('#preview')
+  private: ->
+    @__private ?= $('#private')
 
-  previewCheckbox: ->
-    @__previewCheckbox ?= @preview().find('.checkbox')
+  privateCheckbox: ->
+    @__privateCheckbox ?= @private().find('.checkbox')
 
-  enablePreview: ->
-    @previewCheckbox().html('X')
+  enablePrivate: ->
+    @privateCheckbox().html('X')
 
-  disablePreview: ->
-    @previewCheckbox().html(' ')
+  disablePrivate: ->
+    @privateCheckbox().html(' ')
 
-  mute: ->
-    @__mute ?= $('#mute')
-
-  muteCheckbox: ->
-    @__muteCheckbox ?= @mute().find('.checkbox')
-
-  enableMute: ->
-    @muteCheckbox().html('X')
-
-  disableMute: ->
-    @muteCheckbox().html(' ')
 
 class App
 
@@ -77,22 +65,15 @@ class App
     @controller = new Controller(@view)
     @connect()
     @initSounds()
-    @initPreview()
-    @initMute()
+    @initPrivate()
 
   initSounds: ->
     @view.sounds().click (event) => @handleSoundClick(event)
 
-  initPreview: ->
-    @view.preview().click (event) => @handlePreviewClick(event)
-    @preview = false
-    @renderPreviewState()
-
-  initMute: ->
-    @view.mute().click (event) => @handleMuteClick(event)
-    @view.muted = false
-    @mute = false
-    @renderMuteState()
+  initPrivate: ->
+    @view.private().click (event) => @handlePrivateClick(event)
+    @private = false
+    @renderPrivateState()
 
   connect: ->
     L 'starting connection'
@@ -104,29 +85,22 @@ class App
 
   handleSoundClick: (event) ->
     sound = @view.sound(event)
-    versions = @view.versions(event) || "false"
-    @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "preview": #{@preview}, "versions": #{versions} } }""")
-
-  handlePreviewClick: (event) ->
-    @preview = !@preview
-    @renderPreviewState()
-
-  renderPreviewState: ->
-    if @preview
-      @view.enablePreview()
+    versions = @view.versions(event) || false
+    if @private
+      @controller.onPlayAudio(sound: sound, versions: versions)
     else
-      @view.disablePreview()
+      @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "versions": #{versions} } }""")
 
-  handleMuteClick: (event) ->
-    @mute = !@mute
-    @view.muted = @mute
-    @renderMuteState()
+  handlePrivateClick: (event) ->
+    @private = !@private
+    @controller.stopAllSounds()
+    @renderPrivateState()
 
-  renderMuteState: ->
-    if @mute
-      @view.enableMute()
+  renderPrivateState: ->
+    if @private
+      @view.enablePrivate()
     else
-      @view.disableMute()
+      @view.disablePrivate()
 
   onSocketMessage: (data) ->
     L 'onSocketMessage'
@@ -151,26 +125,21 @@ class App
 class Controller
 
   constructor: (@view) ->
+    @soundsPlaying = []
+
+  stopAllSounds: ->
+    for sound in @soundsPlaying
+      sound.stop()
+      @handleSoundEnd(sound)
 
   onPlayAudio: (args) ->
-    file_base = file = args.sound
+    sound = new Sound(args.sound, args.versions)
+    @soundsPlaying.push(sound)
+    sound.bindEnd => @handleSoundEnd(sound)
+    sound.play()
 
-    if @view.muted
-      @view.setStatus "playingButMute", file_base
-      setTimeout((=> @view.revertStatus()), 2000)
-    else
-      L "Playing '#{file_base}'"
-      if args.versions
-        sound_index = Math.ceil(Math.random() * parseInt(args.versions))
-        L "Version: #{sound_index} / #{args.versions}"
-        file = "#{file_base}#{sound_index}"
-
-      mySound = new buzz.sound( "/audio/#{file}", { formats: [ "ogg", "mp3" ] } )
-      mySound.bind("ended", => @handleSoundEnd(file_base))
-      mySound.play()
-
-      @view.highlightSound(file_base)
-      @view.setStatus "playing", file_base
+    @view.highlightSound(sound.name)
+    @view.setStatus "playing", sound.name
 
   onConnectionChange: (args) ->
     @view.setStatus "connections", args.listeners
@@ -181,11 +150,35 @@ class Controller
     @timeoutStatus()
 
   handleSoundEnd: (sound) =>
-    @view.dehighlightSound(sound)
+    delete(@soundsPlaying[sound])
+    @view.dehighlightSound(sound.name)
     @view.revertStatus()
 
   timeoutStatus: ->
     setTimeout((=> @view.revertStatus()), 2500)
+
+class Sound
+
+  constructor: (@name, @versions) ->
+    @buzz = new buzz.sound( "/audio/#{@file()}", { formats: [ "ogg", "mp3" ] } )
+
+  file: ->
+    if @versions
+      sound_index = Math.ceil(Math.random() * parseInt(@versions))
+      L "Version: #{sound_index} / #{@versions}"
+      "#{@name}#{sound_index}"
+    else
+      @name
+
+  bindEnd: (callback) ->
+    @buzz.bind("ended", callback)
+
+  play: ->
+    @buzz.play()
+
+  stop: ->
+    @buzz.stop()
+
 
 
 jQuery ->
