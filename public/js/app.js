@@ -113,7 +113,7 @@
 
     function App(view) {
       this.view = view;
-      this.controller = new Controller(this.view);
+      this.controller = new Controller(this.view, this);
       this.connect();
       this.initSounds();
       this.initPrivate();
@@ -158,7 +158,7 @@
       sound = this.view.sound(event);
       versions = this.view.versions(event) || false;
       if (this.private) {
-        return this.controller.onPlayAudio({
+        return this.controller.playAudio({
           sound: sound,
           versions: versions
         });
@@ -169,7 +169,7 @@
 
     App.prototype.handlePrivateClick = function(event) {
       this.private = !this.private;
-      this.controller.stopAllSounds();
+      if (this.private) this.controller.stopAllSounds();
       return this.renderPrivateState();
     };
 
@@ -214,8 +214,9 @@
 
   Controller = (function() {
 
-    function Controller(view) {
+    function Controller(view, app) {
       this.view = view;
+      this.app = app;
       this.handleSoundEnd = __bind(this.handleSoundEnd, this);
       this.soundsPlaying = [];
     }
@@ -233,6 +234,10 @@
     };
 
     Controller.prototype.onPlayAudio = function(args) {
+      if (!this.app.private) return this.playAudio(args);
+    };
+
+    Controller.prototype.playAudio = function(args) {
       var sound;
       var _this = this;
       sound = new Sound(args.sound, args.versions);

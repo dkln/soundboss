@@ -62,7 +62,7 @@ class View
 class App
 
   constructor: (@view) ->
-    @controller = new Controller(@view)
+    @controller = new Controller(@view, this)
     @connect()
     @initSounds()
     @initPrivate()
@@ -87,13 +87,13 @@ class App
     sound = @view.sound(event)
     versions = @view.versions(event) || false
     if @private
-      @controller.onPlayAudio(sound: sound, versions: versions)
+      @controller.playAudio(sound: sound, versions: versions)
     else
       @socket.send("""{ "action": "playAudio", "args": { "sound": "#{sound}", "versions": #{versions} } }""")
 
   handlePrivateClick: (event) ->
     @private = !@private
-    @controller.stopAllSounds()
+    @controller.stopAllSounds() if @private
     @renderPrivateState()
 
   renderPrivateState: ->
@@ -124,7 +124,7 @@ class App
 
 class Controller
 
-  constructor: (@view) ->
+  constructor: (@view, @app) ->
     @soundsPlaying = []
 
   stopAllSounds: ->
@@ -133,6 +133,10 @@ class Controller
       @handleSoundEnd(sound)
 
   onPlayAudio: (args) ->
+    unless @app.private
+      @playAudio(args)
+
+  playAudio: (args) ->
     sound = new Sound(args.sound, args.versions)
     @soundsPlaying.push(sound)
     sound.bindEnd => @handleSoundEnd(sound)
@@ -140,6 +144,7 @@ class Controller
 
     @view.highlightSound(sound.name)
     @view.setStatus "playing", sound.name
+
 
   onConnectionChange: (args) ->
     @view.setStatus "connections", args.listeners
