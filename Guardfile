@@ -1,4 +1,6 @@
-# A sample Guardfile
-# More info at https://github.com/guard/guard#readme
+#!/usr/bin/env ruby
+guard 'coffeescript', :input => 'src', :output => 'public/js'
 
-guard 'coffeescript', :input => 'public/js'
+guard 'compass' do
+  watch(%r|^src/(.*)\.s[ac]ss|)
+end

@@ -16,13 +16,13 @@ Go to http://localhost:3000/
 
 ## Development
 
-Run `guard` to automatically compile coffeescripts.
+Run `guard` to automatically compile coffeescript and sass files.
 
 ## Sounds
 
 To add sounds to the soundboard, create MP3 and Ogg Vorbis versions of your sample,
 and put these in the `./public/audio` folder.
-Make sure to remove leading/trailing silence and normalize the volume so it's not too 
+Make sure to remove leading/trailing silence and normalize the volume so it's not too
 loud or soft compared to the other sounds.
 
 Next, add a single line to the `<ul>` list in the `./public/index.html` file, with
