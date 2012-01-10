@@ -82,6 +82,17 @@
       return (_ref = this.__sounds) != null ? _ref : this.__sounds = $('ul li');
     };
 
+    View.prototype.soundNames = function() {
+      var sound, soundNames, _i, _len, _ref;
+      soundNames = [];
+      _ref = this.sounds();
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        sound = _ref[_i];
+        soundNames.push($(sound).text().toLowerCase());
+      }
+      return soundNames;
+    };
+
     View.prototype.overlay = function() {
       var _ref;
       return (_ref = this.__overlay) != null ? _ref : this.__overlay = $('#overlay');
@@ -90,6 +101,11 @@
     View.prototype.private = function() {
       var _ref;
       return (_ref = this.__private) != null ? _ref : this.__private = $('#private');
+    };
+
+    View.prototype.searchBox = function() {
+      var _ref;
+      return (_ref = this.__searchBox) != null ? _ref : this.__searchBox = $('#search_box');
     };
 
     View.prototype.privateCheckbox = function() {
@@ -116,6 +132,7 @@
       this.controller = new Controller(this.view, this);
       this.connect();
       this.initSounds();
+      this.initSearch();
       this.initPrivate();
     }
 
@@ -133,6 +150,13 @@
       });
       this.private = false;
       return this.renderPrivateState();
+    };
+
+    App.prototype.initSearch = function() {
+      var _this = this;
+      return this.view.searchBox().keydown(function(event) {
+        return _this.handleSearch(event);
+      });
     };
 
     App.prototype.connect = function() {
@@ -172,6 +196,40 @@
       if (this.private) this.controller.stopAllSounds();
       return this.renderPrivateState();
     };
+
+    App.prototype.handleSearch = function(event) {
+      if (event.which === 13) {
+        this.doSearch($(event.currentTarget).val());
+        return this.clearSearchBox();
+      }
+    };
+
+    App.prototype.doSearch = function(text) {
+      var clicked, name, regex, sound, _i, _len, _ref, _results;
+      L("Searching " + text);
+      clicked = false;
+      _ref = this.view.sounds();
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        sound = _ref[_i];
+        name = $(sound).text().toLowerCase();
+        regex = new RegExp("" + text, 'gi');
+        if (regex.test(name) === true && clicked === false) {
+          clicked = true;
+          L("CLICKING " + name);
+          _results.push($(sound).click());
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
+    App.prototype.clearSearchBox = function() {
+      return this.view.searchBox().val('');
+    };
+
+    App.prototype.clickOnSound = function(text) {};
 
     App.prototype.renderPrivateState = function() {
       if (this.private) {

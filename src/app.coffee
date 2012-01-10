@@ -43,11 +43,20 @@ class View
   sounds: ->
     @__sounds ?= $('ul li')
 
+  soundNames: ->
+    soundNames = []
+    for sound in @sounds()
+      soundNames.push($(sound).text().toLowerCase())
+    soundNames
+
   overlay: ->
     @__overlay ?= $('#overlay')
 
   private: ->
     @__private ?= $('#private')
+
+  searchBox: ->
+    @__searchBox ?= $('#search_box')
 
   privateCheckbox: ->
     @__privateCheckbox ?= @private().find('.checkbox')
@@ -59,12 +68,14 @@ class View
     @privateCheckbox().html(' ')
 
 
+
 class App
 
   constructor: (@view) ->
     @controller = new Controller(@view, this)
     @connect()
     @initSounds()
+    @initSearch()
     @initPrivate()
 
   initSounds: ->
@@ -74,6 +85,9 @@ class App
     @view.private().click (event) => @handlePrivateClick(event)
     @private = false
     @renderPrivateState()
+
+  initSearch: ->
+    @view.searchBox().keydown (event) => @handleSearch(event)
 
   connect: ->
     L 'starting connection'
@@ -95,6 +109,25 @@ class App
     @private = !@private
     @controller.stopAllSounds() if @private
     @renderPrivateState()
+
+  handleSearch: (event) ->
+    if event.which == 13
+      @doSearch($(event.currentTarget).val())
+      @clearSearchBox()
+
+  doSearch: (text) ->
+    L "Searching #{text}"
+    clicked = false
+    for sound in @view.sounds()
+      name = $(sound).text().toLowerCase()
+      regex = new RegExp("#{text}", 'gi')
+      if regex.test(name) == true && clicked == false
+        clicked = true
+        L "CLICKING #{name}"
+        $(sound).click()
+
+  clearSearchBox: ->
+    @view.searchBox().val('')
 
   renderPrivateState: ->
     if @private
