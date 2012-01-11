@@ -205,16 +205,25 @@
     };
 
     App.prototype.doSearch = function(text) {
-      var clicked, name, regex, sound, _i, _len, _ref, _results;
-      L("Searching " + text);
+      if (this.playingAllTheThings(text) === true) {
+        L('PLAY ALL THE THINGS!');
+        text = text.substring(1);
+        return this.doSearchMany(text);
+      } else {
+        return this.doSearchOne(text);
+      }
+    };
+
+    App.prototype.doSearchOne = function(text) {
+      var clicked, name, sound, _i, _len, _ref, _results;
+      L("Searching first match for: " + text);
       clicked = false;
       _ref = this.view.sounds();
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         sound = _ref[_i];
-        name = $(sound).text().toLowerCase();
-        regex = new RegExp("" + text, 'gi');
-        if (regex.test(name) === true && clicked === false) {
+        name = this.soundName(sound);
+        if (this.matches(text, name) === true && clicked === false) {
           clicked = true;
           L("CLICKING " + name);
           _results.push($(sound).click());
@@ -225,11 +234,43 @@
       return _results;
     };
 
+    App.prototype.doSearchMany = function(text) {
+      var name, sound, _i, _len, _ref, _results;
+      L("Searching any match for: " + text);
+      _ref = this.view.sounds();
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        sound = _ref[_i];
+        name = this.soundName(sound);
+        if (this.matches(text, name) === true) {
+          L("CLICKING " + name);
+          _results.push($(sound).click());
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
+    };
+
+    App.prototype.playingAllTheThings = function(text) {
+      return text.charAt(0) === '!';
+    };
+
+    App.prototype.soundName = function(sound) {
+      return $(sound).text().toLowerCase();
+    };
+
+    App.prototype.matches = function(text, name) {
+      return this.searchRegExp(text).test(name);
+    };
+
+    App.prototype.searchRegExp = function(text) {
+      return new RegExp("" + text, 'gi');
+    };
+
     App.prototype.clearSearchBox = function() {
       return this.view.searchBox().val('');
     };
-
-    App.prototype.clickOnSound = function(text) {};
 
     App.prototype.renderPrivateState = function() {
       if (this.private) {

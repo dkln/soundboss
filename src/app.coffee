@@ -116,15 +116,43 @@ class App
       @clearSearchBox()
 
   doSearch: (text) ->
-    L "Searching #{text}"
+    if @playingAllTheThings(text) == true
+      L 'PLAY ALL THE THINGS!'
+      text = text.substring(1)
+      @doSearchMany(text)
+    else
+      @doSearchOne(text)
+
+  doSearchOne: (text) ->
+    L "Searching first match for: #{text}"
     clicked = false
     for sound in @view.sounds()
-      name = $(sound).text().toLowerCase()
-      regex = new RegExp("#{text}", 'gi')
-      if regex.test(name) == true && clicked == false
+      name = @soundName(sound)
+      if @matches(text, name) == true && clicked == false
         clicked = true
         L "CLICKING #{name}"
         $(sound).click()
+
+  doSearchMany: (text) ->
+    L "Searching any match for: #{text}"
+    for sound in @view.sounds()
+      name = @soundName(sound)
+
+      if @matches(text, name) == true
+        L "CLICKING #{name}"
+        $(sound).click()
+
+  playingAllTheThings: (text) ->
+    text.charAt(0) == '!'
+
+  soundName: (sound) ->
+    $(sound).text().toLowerCase()
+
+  matches: (text, name) ->
+    @searchRegExp(text).test(name)
+
+  searchRegExp: (text) ->
+    new RegExp("#{text}", 'gi')
 
   clearSearchBox: ->
     @view.searchBox().val('')
