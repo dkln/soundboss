@@ -135,10 +135,12 @@ class App
 
   doSearchMany: (text) ->
     L "Searching any match for: #{text}"
+    count = 0
     for sound in @view.sounds()
       name = @soundName(sound)
 
-      if @matches(text, name) == true
+      if count <= 5 && @matches(text, name) == true
+        count = count + 1
         L "CLICKING #{name}"
         $(sound).click()
 

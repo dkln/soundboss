@@ -235,14 +235,16 @@
     };
 
     App.prototype.doSearchMany = function(text) {
-      var name, sound, _i, _len, _ref, _results;
+      var count, name, sound, _i, _len, _ref, _results;
       L("Searching any match for: " + text);
+      count = 0;
       _ref = this.view.sounds();
       _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         sound = _ref[_i];
         name = this.soundName(sound);
-        if (this.matches(text, name) === true) {
+        if (count <= 5 && this.matches(text, name) === true) {
+          count = count + 1;
           L("CLICKING " + name);
           _results.push($(sound).click());
         } else {
