@@ -2,7 +2,7 @@ source 'http://rubygems.org'
 
 gem 'foreman'
 gem 'thin'
-gem 'eventmachine'
+gem 'eventmachine', :git => 'https://github.com/eventmachine/eventmachine.git'
 gem 'em-websocket'
 gem 'json'
 

@@ -1,3 +1,9 @@
+GIT
+  remote: https://github.com/eventmachine/eventmachine.git
+  revision: cc9a3adc5b4cc5640057b396df882220fa46ddd3
+  specs:
+    eventmachine (1.0.0.beta.4)
+
 GEM
   remote: http://rubygems.org/
   specs:
@@ -24,7 +30,6 @@ GEM
     em-websocket (0.3.5)
       addressable (>= 2.1.1)
       eventmachine (>= 0.12.9)
-    eventmachine (0.12.10)
     execjs (1.2.9)
       multi_json (~> 1.0)
     foreman (0.26.1)
@@ -66,7 +71,7 @@ DEPENDENCIES
   capistrano-ext
   capistrano_colors
   em-websocket
-  eventmachine
+  eventmachine!
   foreman
   guard-coffeescript
   guard-compass
