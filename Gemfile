@@ -10,6 +10,7 @@ group :development do
   gem 'capistrano-ext'
   gem 'capistrano_colors'
   gem 'capistrano'
+  gem 'rvm-capistrano'
   gem 'guard-coffeescript'
   gem 'guard-compass'
   gem 'sass'
